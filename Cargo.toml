@@ -1,0 +1,22 @@
+[package]
+name = "almambet"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-imap = "0.10.3"
+async-std = { version = "1.12", features = ["attributes"] }
+native-tls = "0.2.14"
+anyhow = "1.0.97"
+futures = "0.3.31"
+async-native-tls = "0.5.0"
+mailparse = "0.16.1"
+rpassword = "7.3.1"
+tokio = { version = "1.44.1", features = ["full"] }
+tokio-util = { version = "0.7.14", features = ["compat"] }
+tokio-native-tls = "0.3.1"
+serde_yaml = "0.9.34"
+serde = { version = "1.0.219", features = ["derive"] }
+backtrace = "0.3.74"
