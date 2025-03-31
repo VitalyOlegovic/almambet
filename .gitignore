@@ -1,2 +1,4 @@
 /target
 settings.yaml
+.encrypted_password
+.encryption_key

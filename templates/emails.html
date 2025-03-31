@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Email Messages</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .message {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .message-header {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        .message-subject {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .message-meta {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .message-meta span {
+            margin-right: 15px;
+        }
+        .message-content {
+            color: #444;
+            line-height: 1.5;
+        }
+        .message-id {
+            font-size: 0.8em;
+            color: #999;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Email Messages</h1>
+    {% for message in messages %}
+    <div class="message">
+        <div class="message-header">
+            <div class="message-subject">{{ message.subject }}</div>
+            <div class="message-meta">
+                <span>From: {{ message.from }}</span>
+                <span>Date: {{ message.date }}</span>
+                {% if message.to %}
+                <span>To: {{ message.to }}</span>
+                {% endif %}
+                {% if message.cc %}
+                <span>CC: {{ message.cc }}</span>
+                {% endif %}
+            </div>
+        </div>
+        {% if message.content %}
+        <div class="message-content">
+            {{ message.content }}
+        </div>
+        {% endif %}
+        {% if message.message_id %}
+        <div class="message-id">
+            Message ID: {{ message.message_id }}
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</body>
+</html>
