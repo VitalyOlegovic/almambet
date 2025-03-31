@@ -7,19 +7,60 @@ use settings::Settings;
 use tokio::net::TcpStream;
 use tokio_util::compat::{Compat, TokioAsyncReadCompatExt};
 use std::error::Error;
+use serde::{Serialize, Deserialize};
 
 pub mod settings;
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Message {
+    pub subject: String,
+    pub from: String,
+    pub date: String,
+    pub to: Option<String>,
+    pub cc: Option<String>,
+    pub bcc: Option<String>,
+    pub reply_to: Option<String>,
+    pub message_id: Option<String>,
+    pub content_type: Option<String>,
+    pub content: Option<String>,
+}
+
 // Process a single email message to extract subject, from, and date
-fn process_message(message: &Fetch) -> Result<(String, String, String)> {
+fn process_message(message: &Fetch) -> Result<Message> {
     let body = message.body().expect("message did not have a body!");
     let parsed_mail = parse_mail(body)?;
     let subject = parsed_mail.headers.get_first_value("Subject");
     let from = parsed_mail.headers.get_first_value("From");
     let date = parsed_mail.headers.get_first_value("Date");
+    let to = parsed_mail.headers.get_first_value("To");
+    let cc = parsed_mail.headers.get_first_value("Cc");
+    let bcc = parsed_mail.headers.get_first_value("Bcc");
+    let reply_to = parsed_mail.headers.get_first_value("Reply-To");
+    let message_id = parsed_mail.headers.get_first_value("Message-ID");
+    let content_type = parsed_mail.headers.get_first_value("Content-Type");
+
+    // Extract content from the message body
+    let content = if let Some(subparts) = parsed_mail.subparts.first() {
+        // Try to get text content from the first subpart
+        Some(subparts.get_body()?.to_string())
+    } else {
+        // If no subparts, try to get content from the main body
+        Some(parsed_mail.get_body()?.to_string())
+    };
     
     match (subject, from, date) {
-        (Some(s), Some(f), Some(d)) => Ok((s, f, d)),
+        (Some(s), Some(f), Some(d)) => Ok(Message {
+            subject: s,
+            from: f,
+            date: d,
+            to,
+            cc,
+            bcc,
+            reply_to,
+            message_id,
+            content_type,
+            content,
+        }),
         _ => bail!("Cannot parse the message"),
     }
 }
@@ -62,17 +103,18 @@ async fn fetch_messages(
     session: &mut Session<Compat<tokio_native_tls::TlsStream<TcpStream>>>,
     mailbox: &str,
     count: u32
-) -> Result<Vec<(String, String, String)>> {
+) -> Result<Vec<Message>> {
     let mailbox_data = session.select(mailbox).await?;
     println!("-- {} selected", mailbox);
     
     let total_messages = mailbox_data.exists;
     let range = calculate_message_range(total_messages, count);
     
-    let messages_stream = session.fetch(&range, "RFC822").await?;
+    // Fetch both headers and body
+    let messages_stream = session.fetch(&range, "(RFC822 BODY.PEEK[])").await?;
     let messages: Vec<_> = messages_stream.try_collect().await?;
     
-    let successful_results: Vec<(String, String, String)> = messages
+    let successful_results: Vec<Message> = messages
         .iter()
         .filter_map(|message| process_message(message).ok())
         .collect();
@@ -81,10 +123,16 @@ async fn fetch_messages(
 }
 
 // Display the processed messages
-fn display_messages(messages: &[(String, String, String)]) {
+fn display_messages(messages: &[Message]) {
     messages
         .iter()
-        .for_each(|message| println!("({}, {}, {})", message.0, message.1, message.2));
+        .for_each(|message| {
+            match serde_json::to_string_pretty(message) {
+                Ok(json) => println!("{}", json),
+                Err(e) => println!("Error converting to JSON: {}", e),
+            }
+            println!("---");
+        });
 }
 
 // Get user credentials
