@@ -1,4 +1,4 @@
-use anyhow::{Result, Context};
+use anyhow::{Result};
 use std::fs;
 use std::path::PathBuf;
 use aes_gcm::{
@@ -11,7 +11,7 @@ use rand::RngCore;
 const PASSWORD_FILE: &str = ".encrypted_password";
 const KEY_FILE: &str = ".encryption_key";
 
-fn get_encryption_key() -> Result<Aes256Gcm> {
+pub fn get_encryption_key() -> Result<Aes256Gcm> {
     let key_path = PathBuf::from(KEY_FILE);
     let key = if key_path.exists() {
         // Read existing key
@@ -29,7 +29,7 @@ fn get_encryption_key() -> Result<Aes256Gcm> {
     Ok(key)
 }
 
-fn encrypt_password(password: &str) -> Result<String> {
+pub fn encrypt_password(password: &str) -> Result<String> {
     let cipher = get_encryption_key()?;
     let mut nonce_bytes = [0u8; 12];
     rand::thread_rng().fill_bytes(&mut nonce_bytes);
@@ -45,7 +45,7 @@ fn encrypt_password(password: &str) -> Result<String> {
     Ok(BASE64.encode(&combined))
 }
 
-fn decrypt_password(encrypted: &str) -> Result<String> {
+pub fn decrypt_password(encrypted: &str) -> Result<String> {
     let cipher = get_encryption_key()?;
     let combined = BASE64.decode(encrypted)
         .map_err(|e| anyhow::anyhow!("Failed to decode base64: {}", e))?;
