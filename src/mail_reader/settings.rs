@@ -4,6 +4,7 @@ use std::fs::File;
 use std::io::BufReader;
 use serde_yaml::Error;
 use backtrace::Backtrace;
+use log::{info, error};
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {
@@ -18,11 +19,11 @@ pub fn load_settings() -> Result<Settings, Error> {
     let file = match file {
         Ok(file) => file,
         Err(err) => {
-            eprintln!("Error: {}", err);
+            error!("Error: {}", err);
         
             // Capture and print the backtrace
             let backtrace = Backtrace::new();
-            eprintln!("Backtrace:\n{:?}", backtrace);
+            error!("Backtrace:\n{:?}", backtrace);
             panic!("Cannot find settings")
         }
     };
@@ -34,11 +35,11 @@ pub fn load_settings() -> Result<Settings, Error> {
     let settings: Settings = match settings {
         Ok(settings) => settings,
         Err(err) => {
-            eprintln!("Error: {}", err);
+            error!("Error: {}", err);
         
             // Capture and print the backtrace
             let backtrace = Backtrace::new();
-            eprintln!("Backtrace:\n{:?}", backtrace);
+            error!("Backtrace:\n{:?}", backtrace);
             panic!("Cannot deserialize settings")
         }
     };

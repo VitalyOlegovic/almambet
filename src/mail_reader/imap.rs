@@ -7,6 +7,7 @@ use tokio_util::compat::{Compat, TokioAsyncReadCompatExt};
 use crate::mail_reader::message::Message;
 use crate::mail_reader::settings::Settings;
 use crate::mail_reader::encryption;
+use log::{info, error};
 
 // Establish a TLS-encrypted connection to the IMAP server
 async fn connect_to_server(server: &str, port: u16) -> Result<tokio_native_tls::TlsStream<TcpStream>> {
@@ -15,7 +16,7 @@ async fn connect_to_server(server: &str, port: u16) -> Result<tokio_native_tls::
     let tls = tokio_native_tls::TlsConnector::from(native_tls::TlsConnector::new()?);
     let tls_stream = tls.connect(server, tcp_stream).await?;
     
-    println!("-- connected to {}:{}", server, port);
+    info!("-- connected to {}:{}", server, port);
     Ok(tls_stream)
 }
 
@@ -30,7 +31,7 @@ async fn login_to_server(
         .await
         .map_err(|e| e.0)?;
     
-    println!("-- logged in as {}", username);
+    info!("-- logged in as {}", username);
     Ok(imap_session)
 }
 
@@ -47,7 +48,7 @@ async fn fetch_messages(
     count: u32
 ) -> Result<Vec<Message>> {
     let mailbox_data = session.select(mailbox).await?;
-    println!("-- {} selected", mailbox);
+    info!("-- {} selected", mailbox);
     
     let total_messages = mailbox_data.exists;
     let range = calculate_message_range(total_messages, count);

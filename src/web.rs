@@ -5,6 +5,7 @@ use chrono::Local;
 use std::sync::Arc;
 use mail_reader::{Message, fetch_messages_from_server};
 use settings::Settings;
+use log::{info, error};
 
 async fn render_messages_page(
     messages: Arc<Vec<Message>>,
@@ -33,7 +34,7 @@ fn create_router(
 
 async fn start_server(router: Router) -> Result<(), Box<dyn std::error::Error>> {
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
-    println!("Server running on http://localhost:3000");
+    info!("Server running on http://localhost:3000");
     axum::serve(listener, router).await?;
     Ok(())
 }
@@ -52,11 +53,11 @@ async fn main() {
     match fetch_messages_from_server(settings).await {
         Ok(messages) => {
             if let Err(e) = start_web_server(messages).await {
-                eprintln!("Error starting web server: {}", e);
+                error!("Error starting web server: {}", e);
             }
         }
         Err(e) => {
-            eprintln!("Error fetching messages: {}", e);
+            error!("Error fetching messages: {}", e);
         }
     }
 }

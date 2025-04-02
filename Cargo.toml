@@ -27,3 +27,5 @@ chrono = "0.4" # For date handling
 aes-gcm = "0.10.3"
 base64 = "0.21.7"
 rand = "0.8.5"
+log = "0.4.27"
+fern = "0.6"
