@@ -2,105 +2,38 @@
 <html>
 <head>
     <title>Email Details</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .message {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .message-header {
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
-        }
-        .message-subject {
-            font-size: 1.4em;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 5px;
-        }
-        .message-meta {
-            color: #666;
-            font-size: 0.9em;
-        }
-        .message-meta span {
-            margin-right: 15px;
-        }
-        .message-content {
-            color: #444;
-            line-height: 1.5;
-            white-space: pre-wrap;
-        }
-        .message-id {
-            font-size: 0.8em;
-            color: #999;
-            margin-top: 10px;
-        }
-        .back-link {
-            display: inline-block;
-            margin-bottom: 20px;
-            color: #0066cc;
-            text-decoration: none;
-        }
-        .back-link:hover {
-            text-decoration: underline;
-        }
-        .action-buttons {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-        }
-        .spam-button {
-            background-color: #ff4444;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9em;
-        }
-        .spam-button:hover {
-            background-color: #cc0000;
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
 </head>
-<body>
-    <a href="/" class="back-link">← Back to all emails</a>
-    <div class="message">
-        <div class="message-header">
-            <div class="message-subject">{{ message.subject }}</div>
-            <div class="message-meta">
-                <span>From: {{ message.from }}</span>
-                <span>Date: {{ message.date }}</span>
-                {% if message.to %}
-                <span>To: {{ message.to }}</span>
-                {% endif %}
-                {% if message.cc %}
-                <span>CC: {{ message.cc }}</span>
-                {% endif %}
+<body class="has-background-light">
+    <div class="container p-5">
+        <a href="/" class="button is-text mb-4">← Back to all emails</a>
+        <div class="box">
+            <div class="pb-4 mb-4 has-border-bottom">
+                <h1 class="title is-4 mb-2">{{ message.subject }}</h1>
+                <div class="subtitle is-6 has-text-grey mt-2">
+                    <span class="mr-4">From: {{ message.from }}</span>
+                    <span class="mr-4">Date: {{ message.date }}</span>
+                    {% if message.to %}
+                    <span class="mr-4">To: {{ message.to }}</span>
+                    {% endif %}
+                    {% if message.cc %}
+                    <span class="mr-4">CC: {{ message.cc }}</span>
+                    {% endif %}
+                </div>
             </div>
-        </div>
-        {% if message.content %}
-        <div class="message-content">
-            {{ message.content }}
-        </div>
-        {% endif %}
-        {% if message.message_id %}
-        <div class="message-id">
-            Message ID: {{ message.message_id }}
-        </div>
-        {% endif %}
-        <div class="action-buttons">
-            <a href="/email/{{ message.message_id }}/spam" class="button is-danger">Move to Spam</a>
+            {% if message.content %}
+            <div class="content">
+                {{ message.content }}
+            </div>
+            {% endif %}
+            {% if message.message_id %}
+            <div class="is-size-7 has-text-grey mt-4">
+                Message ID: {{ message.message_id }}
+            </div>
+            {% endif %}
+            <div class="mt-4">
+                <a href="/email/{{ message.message_id }}/spam" class="button is-danger">Move to Spam</a>
+            </div>
         </div>
     </div>
 </body>

@@ -2,57 +2,18 @@
 <html>
 <head>
     <title>Error</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .error-container {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        .error-icon {
-            font-size: 48px;
-            color: #ff4444;
-            margin-bottom: 20px;
-        }
-        .error-title {
-            font-size: 24px;
-            color: #333;
-            margin-bottom: 10px;
-        }
-        .error-message {
-            color: #666;
-            margin-bottom: 20px;
-            white-space: pre-wrap;
-        }
-        .back-link {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #0066cc;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            margin-top: 10px;
-        }
-        .back-link:hover {
-            background-color: #0055aa;
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
 </head>
-<body>
-    <div class="error-container">
-        <div class="error-icon">⚠️</div>
-        <h1 class="error-title">Error</h1>
-        <div class="error-message">{{ error_message }}</div>
-        <a href="/" class="back-link">Back to Home</a>
+<body class="has-background-light">
+    <div class="container p-5">
+        <div class="box has-text-centered">
+            <div class="is-size-1 mb-4">⚠️</div>
+            <h1 class="title is-3 mb-4">Error</h1>
+            <div class="content mb-5">
+                {{ error_message }}
+            </div>
+            <a href="/" class="button is-primary">Back to Home</a>
+        </div>
     </div>
 </body>
 </html> 
