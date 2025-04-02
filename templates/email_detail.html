@@ -3,6 +3,27 @@
 <head>
     <title>Email Details</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <script language="javascript">
+        function moveToSpam() {
+            display_modal("Are you sure you want to move this email to spam?", "moveToSpam", "Move to Spam");
+        }
+
+        function display_modal(message, id, title) {
+            var modal = document.getElementById(id);
+            modal.querySelector(".modal-card-title").textContent = title;
+            modal.querySelector(".modal-card-body").textContent = message;
+            modal.classList.add("is-active");
+        }
+
+        function closeModal(id) {
+            var modal = document.getElementById(id);
+            modal.classList.remove("is-active");
+        }
+
+        function confirmMoveToSpam() {
+            window.location.href = "/email/{{ message.message_id|safe }}/spam";
+        }
+    </script>
 </head>
 <body class="has-background-light">
     <div class="container p-5">
@@ -32,8 +53,23 @@
             </div>
             {% endif %}
             <div class="mt-4">
-                <a href="/email/{{ message.message_id }}/spam" class="button is-danger">Move to Spam</a>
+                <a onclick="moveToSpam()" class="button is-danger is-light">Move to Spam</a>
             </div>
+        </div>
+    </div>
+
+    <div id="moveToSpam" class="modal">
+        <div class="modal-background" onclick="closeModal('moveToSpam')"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title"></p>
+            </header>
+            <section class="modal-card-body">
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-danger" onclick="confirmMoveToSpam()">Confirm</button>
+                <button class="button" onclick="closeModal('moveToSpam')">Cancel</button>
+            </footer>
         </div>
     </div>
 </body>
