@@ -3,12 +3,12 @@ use tera::Tera;
 use std::sync::Arc;
 use crate::mail_reader::message::Message;
 use crate::mail_reader::imap::fetch_messages_from_server;
+use crate::mail_reader::imap::move_message_to_spam;
 use crate::mail_reader::settings::Settings;
 use log::{info, error};
 use urlencoding;
-use std::error::Error as StdError;
-
-type AppError = Box<dyn StdError + Send + Sync>;
+use anyhow::Error;
+type AppError = Error;
 
 async fn render_error(tera: Arc<Tera>, error_message: String) -> Html<String> {
     let mut ctx = tera::Context::new();
@@ -36,7 +36,7 @@ async fn render_email_detail(
 ) -> Result<Html<String>, AppError> {
     let message = messages.iter()
         .find(|m| m.message_id.as_ref() == Some(&message_id))
-        .ok_or_else(|| "Message not found")?;
+        .ok_or_else(|| anyhow::anyhow!("Message not found"))?;
     
     let mut ctx = tera::Context::new();
     ctx.insert("message", message);
@@ -46,28 +46,31 @@ async fn render_email_detail(
 
 async fn move_to_spam(
     message_id: String,
-    messages: Arc<Vec<Message>>,
+    settings: Settings,
 ) -> Result<Redirect, AppError> {
-    let _message = messages.iter()
-        .find(|m| m.message_id.as_ref() == Some(&message_id))
-        .ok_or_else(|| "Message not found")?;
-    
-    // TODO: Implement actual move to spam functionality
-    info!("Moving message {} to spam folder", message_id);
-    
+    let _ = move_message_to_spam(settings, message_id).await;
+
     Ok(Redirect::to("/"))
+}
+
+async fn start_server(router: Router) -> Result<(), AppError> {
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
+    info!("Server running on http://localhost:3000");
+    axum::serve(listener, router).await?;
+    Ok(())
 }
 
 fn create_router(
     messages: Arc<Vec<Message>>,
     tera: Arc<Tera>,
+    settings: Settings,
 ) -> Router {
     let messages_for_list = messages.clone();
     let tera_for_list = tera.clone();
     let messages_for_detail = messages.clone();
     let tera_for_detail = tera.clone();
-    let messages_for_spam = messages.clone();
     let tera_for_error = tera.clone();
+    let settings_for_spam = settings.clone();
     
     Router::new()
         .route("/", get(move || async move {
@@ -83,7 +86,7 @@ fn create_router(
             }
         }))
         .route("/email/:message_id/spam", get(move |axum::extract::Path(message_id)| async move {
-            match move_to_spam(message_id, messages_for_spam.clone()).await {
+            match move_to_spam(message_id, settings_for_spam.clone()).await {
                 Ok(redirect) => redirect,
                 Err(e) => Redirect::to(&format!("/error?message={}", urlencoding::encode(&format!("Error moving to spam: {}", e))))
             }
@@ -95,28 +98,21 @@ fn create_router(
         .layer(Extension(tera.clone()))
 }
 
-async fn start_server(router: Router) -> Result<(), Box<dyn std::error::Error>> {
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
-    info!("Server running on http://localhost:3000");
-    axum::serve(listener, router).await?;
-    Ok(())
-}
-
-pub async fn start_web_server(messages: Vec<Message>) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start_web_server(messages: Vec<Message>, settings: Settings) -> Result<(), AppError> {
     let tera = Arc::new(Tera::new("templates/**/*.html")?);
     let messages = Arc::new(messages);
     
-    let router = create_router(Arc::clone(&messages), Arc::clone(&tera));
+    let router = create_router(Arc::clone(&messages), Arc::clone(&tera), settings);
     start_server(router).await
 }
 
 pub async fn entrypoint(settings: Settings) -> Result<(), Box<dyn std::error::Error>> {
-    let result = fetch_messages_from_server(settings).await;
+    let result = fetch_messages_from_server(settings.clone()).await;
     match result {
         Ok(messages) => {
-            if let Err(e) = start_web_server(messages).await {
+            if let Err(e) = start_web_server(messages, settings).await {
                 error!("Error starting web server: {}", e);
-                return Err(e);
+                return Err(e.into());
             }else{
                 info!("Web server started");
                 return Ok(());

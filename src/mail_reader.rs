@@ -4,7 +4,6 @@ pub mod settings;
 pub mod encryption;
 pub mod message;
 pub mod imap;
-pub mod display;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Message {

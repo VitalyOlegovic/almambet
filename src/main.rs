@@ -1,6 +1,6 @@
 mod mail_reader;
 mod web;
-use std::error::Error;
+use std::error::Error as StdError;
 use fern;
 
 fn setup_logger() -> Result<(), fern::InitError> {
@@ -22,7 +22,7 @@ fn setup_logger() -> Result<(), fern::InitError> {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), Box<dyn StdError>> {
     setup_logger().expect("Failed to initialize logger");
 
     let settings = mail_reader::settings::load_settings()?;

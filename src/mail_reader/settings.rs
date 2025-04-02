@@ -6,7 +6,7 @@ use serde_yaml::Error;
 use backtrace::Backtrace;
 use log::{error};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
     pub imap_server: String,
     pub port: u16,

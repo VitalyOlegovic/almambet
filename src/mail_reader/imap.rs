@@ -3,11 +3,12 @@ use async_imap::{Client, Session};
 use futures::TryStreamExt;
 use tokio::net::TcpStream;
 use tokio_util::compat::{Compat, TokioAsyncReadCompatExt};
+use std::error::Error as StdError;
 
 use crate::mail_reader::message::Message;
 use crate::mail_reader::settings::Settings;
 use crate::mail_reader::encryption;
-use log::{info};
+use log::{info, error};
 
 // Establish a TLS-encrypted connection to the IMAP server
 async fn connect_to_server(server: &str, port: u16) -> Result<tokio_native_tls::TlsStream<TcpStream>> {
@@ -63,6 +64,57 @@ async fn fetch_messages(
         .collect();
     
     Ok(successful_results)
+}
+
+// Move a message to the spam folder
+pub async fn move_to_spam(
+    session: &mut Session<Compat<tokio_native_tls::TlsStream<TcpStream>>>,
+    message_id: &str,
+) -> Result<()> {
+    // First, select the INBOX to ensure we're in the right folder
+    session.select("INBOX").await?;
+    
+    // Search for the message by its Message-ID header
+    let search_result = session.search(format!("HEADER Message-ID {}", message_id)).await?;
+    
+    if search_result.is_empty() {
+        return Err(anyhow::anyhow!("Message not found"));
+    }
+    
+    // Get the UID of the message
+    let uid_result = session.uid_search(format!("HEADER Message-ID {}", message_id)).await?;
+    let uid = uid_result.into_iter().next()
+        .ok_or_else(|| anyhow::anyhow!("No UID found"))?;
+    
+    // Move the message to the spam folder using UID
+    session.uid_mv(uid.to_string(), "Spam").await?;
+    info!("Moved message {} to spam folder", message_id);
+    
+    Ok(())
+}
+
+pub async fn move_message_to_spam(mail_settings: Settings, message_id: String) -> Result<(), Box<dyn StdError + Send + Sync>> {
+    // Get credentials
+    let (username, password) = encryption::get_credentials(mail_settings.email_address.as_str())?;
+    
+    // Connect to server
+    let tls_stream = connect_to_server(mail_settings.imap_server.as_str(), mail_settings.port).await?;
+    let compat_stream = tls_stream.compat();
+    let client = Client::new(compat_stream);
+    
+    // Log in
+    let mut imap_session = login_to_server(client, &username, &password).await?;
+    
+    // Move message to spam
+    if let Err(e) = move_to_spam(&mut imap_session, &message_id).await {
+        error!("Failed to move message to spam: {}", e);
+        return Err(e.into());
+    }
+    
+    // Be nice to the server and log out
+    imap_session.logout().await?;
+    
+    Ok(())
 }
 
 pub async fn fetch_messages_from_server(mail_settings: Settings) -> Result<Vec<Message>, Box<dyn std::error::Error>> {
