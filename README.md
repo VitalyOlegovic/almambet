@@ -1,6 +1,7 @@
-# Almambet - Email Reader and Web Interface
+# Almambet - Email Reader
 
-A Rust application that provides both command-line and web interface for reading emails from an IMAP server.
+A secure and efficient email reader application built with Rust, featuring IMAP support and a web interface.
+
 
 ## About the Name
 
@@ -8,28 +9,74 @@ The name "Almambet" is inspired by a significant character from the Kyrgyz epic 
 
 ## Features
 
-### Email Reading
-- Connects to IMAP servers securely using TLS
-- Fetches recent emails from the INBOX
-- Extracts email metadata including:
-  - Subject
-  - From
-  - Date
-  - To
-  - CC
-  - BCC
-  - Reply-To
-  - Message ID
-  - Content Type
-  - Message Content
-- Secure password storage using AES-256-GCM encryption
-- Automatic password caching (only asks once)
+- **Secure Email Access**: Connect to IMAP servers to fetch and read emails
+- **Web Interface**: View emails through a modern web interface built with Axum
+- **Template Rendering**: Uses Tera templates for email display
+- **Secure Credential Storage**: Encrypted storage of email credentials
+- **Logging**: Comprehensive logging system for monitoring and debugging
 
-### Web Interface
-- Modern, responsive web interface
-- JSON-based message display
-- Real-time email fetching
-- Clean and intuitive UI
+## Project Structure
+
+```
+almambet/
+├── src/
+│   ├── main.rs              # Application entry point
+│   ├── web.rs               # Web server implementation
+│   ├── mail_reader.rs       # Main mail reader module
+│   └── mail_reader/
+│       ├── imap.rs          # IMAP client implementation
+│       ├── message.rs       # Email message handling
+│       ├── settings.rs      # Configuration management
+│       ├── display.rs       # Email display formatting
+│       └── encryption.rs    # Credential encryption
+├── templates/               # HTML templates
+├── resources/              # Static resources
+├── Cargo.toml             # Project dependencies
+└── README.md              # This file
+```
+
+## Dependencies
+
+- **axum**: Web framework
+- **tera**: Template engine
+- **imap**: IMAP client library
+- **native-tls**: TLS support
+- **serde**: Serialization/deserialization
+- **chrono**: Date and time handling
+- **log**: Logging framework
+
+## Configuration
+
+The application requires the following configuration files:
+
+- `.encrypted_password`: Encrypted email password
+- `.encryption_key`: Encryption key for credentials
+
+## Building and Running
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/almambet.git
+   cd almambet
+   ```
+
+2. Build the project:
+   ```bash
+   cargo build --release
+   ```
+
+3. Run the application:
+   ```bash
+   cargo run --release
+   ```
+
+The web interface will be available at `http://localhost:3000`.
+
+## Security
+
+- Email credentials are stored in encrypted form
+- Uses secure TLS connections for IMAP
+- Implements proper error handling and logging
 
 ## Configuration
 
@@ -47,57 +94,3 @@ port: 993
 - AES-256-GCM encryption for stored passwords
 - Secure key management
 - Password caching with encryption
-
-## Usage
-
-### Command Line Interface
-
-```bash
-cargo run
-```
-
-This will:
-1. Connect to your configured IMAP server
-2. Fetch the 10 most recent emails
-3. Display them in JSON format
-
-### Web Interface
-
-```bash
-cargo run --bin web
-```
-
-This will:
-1. Start a web server on port 3000
-2. Fetch emails from your IMAP server
-3. Display them in a web interface at http://localhost:3000
-
-## Dependencies
-
-- `async-imap`: For IMAP server communication
-- `tokio`: For async runtime
-- `mailparse`: For email parsing
-- `aes-gcm`: For password encryption
-- `axum`: For web server
-- `tera`: For HTML templating
-- `serde`: For serialization/deserialization
-- `anyhow`: For error handling
-
-## Project Structure
-
-```
-src/
-├── main.rs           # Main entry point
-├── mail_reader.rs    # Email fetching and processing
-├── web.rs           # Web server implementation
-├── settings.rs      # Configuration handling
-└── templates/       # HTML templates
-    └── emails.html  # Email display template
-```
-
-## Security Notes
-
-- The application stores encrypted passwords in `.encrypted_password`
-- Encryption keys are stored in `.encryption_key`
-- Both files should be kept secure and not shared
-- The password is only requested once and then cached securely

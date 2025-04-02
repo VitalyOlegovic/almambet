@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::BufReader;
 use serde_yaml::Error;
 use backtrace::Backtrace;
-use log::{info, error};
+use log::{error};
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {

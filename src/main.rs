@@ -1,5 +1,5 @@
 mod mail_reader;
-
+mod web;
 use std::error::Error;
 use fern;
 
@@ -26,5 +26,5 @@ async fn main() -> Result<(), Box<dyn Error>> {
     setup_logger().expect("Failed to initialize logger");
 
     let settings = mail_reader::settings::load_settings()?;
-    mail_reader::main(settings).await
+    web::entrypoint(settings).await
 }

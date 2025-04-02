@@ -7,7 +7,7 @@ use tokio_util::compat::{Compat, TokioAsyncReadCompatExt};
 use crate::mail_reader::message::Message;
 use crate::mail_reader::settings::Settings;
 use crate::mail_reader::encryption;
-use log::{info, error};
+use log::{info};
 
 // Establish a TLS-encrypted connection to the IMAP server
 async fn connect_to_server(server: &str, port: u16) -> Result<tokio_native_tls::TlsStream<TcpStream>> {

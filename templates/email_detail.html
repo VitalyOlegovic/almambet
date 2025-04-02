@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Email Messages</title>
+    <title>Email Details</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -23,18 +23,10 @@
             margin-bottom: 10px;
         }
         .message-subject {
-            font-size: 1.2em;
+            font-size: 1.4em;
             font-weight: bold;
             color: #333;
             margin-bottom: 5px;
-        }
-        .message-subject a {
-            color: #333;
-            text-decoration: none;
-        }
-        .message-subject a:hover {
-            color: #0066cc;
-            text-decoration: underline;
         }
         .message-meta {
             color: #666;
@@ -46,22 +38,29 @@
         .message-content {
             color: #444;
             line-height: 1.5;
+            white-space: pre-wrap;
         }
         .message-id {
             font-size: 0.8em;
             color: #999;
             margin-top: 10px;
         }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #0066cc;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
-    <h1>Email Messages</h1>
-    {% for message in messages %}
+    <a href="/" class="back-link">← Back to all emails</a>
     <div class="message">
         <div class="message-header">
-            <div class="message-subject">
-                <a href="/email/{{ message.message_id }}">{{ message.subject }}</a>
-            </div>
+            <div class="message-subject">{{ message.subject }}</div>
             <div class="message-meta">
                 <span>From: {{ message.from }}</span>
                 <span>Date: {{ message.date }}</span>
@@ -84,6 +83,5 @@
         </div>
         {% endif %}
     </div>
-    {% endfor %}
 </body>
-</html>
+</html> 

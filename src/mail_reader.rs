@@ -1,5 +1,3 @@
-use anyhow::{Result};
-use std::error::Error;
 use serde::{Serialize, Deserialize};
 
 pub mod settings;
@@ -29,24 +27,4 @@ pub struct Attachment {
     pub content_type: String,
     pub size: usize,
     pub content: Vec<u8>,
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-pub async fn main(mail_settings: settings::Settings) -> Result<(), Box<dyn Error>> {
-    let messages = imap::fetch_messages_from_server(mail_settings).await?;
-    display::display_messages(&messages);
-    Ok(())
 }
