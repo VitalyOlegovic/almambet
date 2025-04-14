@@ -4,7 +4,7 @@ use std::sync::Arc;
 use crate::mail_reader::message::Message;
 use crate::mail_reader::imap::fetch_messages_from_server;
 use crate::mail_reader::imap::move_message_to_spam;
-use crate::mail_reader::settings::Settings;
+use crate::settings::Settings;
 use log::{info, error};
 use urlencoding;
 use anyhow::Error;

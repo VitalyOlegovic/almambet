@@ -1,3 +1,4 @@
 imap_server: "imap.example.com"
 port: 993
 email_address: "user@example.com"
+spam_filter_interval_seconds: 5

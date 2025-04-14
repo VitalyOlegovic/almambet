@@ -11,6 +11,7 @@ pub struct Settings {
     pub imap_server: String,
     pub port: u16,
     pub email_address: String,
+    pub spam_filter_interval_seconds: u16,
 }
 
 pub fn load_settings() -> Result<Settings, Error> {

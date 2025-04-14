@@ -1,6 +1,5 @@
 use serde::{Serialize, Deserialize};
 
-pub mod settings;
 pub mod encryption;
 pub mod message;
 pub mod imap;

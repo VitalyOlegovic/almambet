@@ -1,5 +1,5 @@
 use axum::{Router, routing::get};
-use crate::mail_reader::settings::Settings;
+use crate::settings::Settings;
 use crate::mail_reader::imap::fetch_messages_from_server;
 use std::error::Error;
 use axum::{
@@ -53,7 +53,7 @@ pub async fn entrypoint(settings: Settings) -> Result<(), Box<dyn Error>> {
         .route("/api/v1/emails", get(move || get_data(settings.clone())));
 
     // run our app with hyper, listening globally on port 3000
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3001").await?;
     axum::serve(listener, app).await?;
     Ok(())
 }

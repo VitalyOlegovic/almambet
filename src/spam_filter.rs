@@ -1,5 +1,5 @@
 use tokio::time::Duration;
-use crate::mail_reader::settings::Settings;
+use crate::settings::Settings;
 use tokio_cron_scheduler::{Job, JobScheduler};
 use log::info;
 
@@ -16,11 +16,13 @@ pub async fn entrypoint(settings: Settings) -> Result<(), Box<dyn std::error::Er
     
     // Add a job that runs every 5 seconds
     sched.add(
-        Job::new_repeated_async(Duration::from_secs(5), move |_uuid, _l| {
-            let settings = settings_clone.clone();
-            Box::pin(async move {
-                spam_filter(&settings).await;
-            })
+        Job::new_repeated_async(
+            Duration::from_secs(settings.spam_filter_interval_seconds.into()), 
+            move |_uuid, _l| {
+                let settings = settings_clone.clone();
+                Box::pin(async move {
+                    spam_filter(&settings).await;
+                })
         })?
     ).await?;
 

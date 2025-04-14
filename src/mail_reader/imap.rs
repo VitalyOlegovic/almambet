@@ -6,7 +6,7 @@ use tokio_util::compat::{Compat, TokioAsyncReadCompatExt};
 use std::error::Error as StdError;
 
 use crate::mail_reader::message::Message;
-use crate::mail_reader::settings::Settings;
+use crate::settings::Settings;
 use crate::mail_reader::encryption;
 use log::{info, error};
 
