@@ -67,12 +67,14 @@ async fn fetch_messages(
 }
 
 // Move a message to the spam folder
-pub async fn move_to_spam(
+pub async fn move_message_by_message_id(
     session: &mut Session<Compat<tokio_native_tls::TlsStream<TcpStream>>>,
     message_id: &str,
+    source_mailbox: &str,
+    target_mailbox: &str,
 ) -> Result<()> {
     // First, select the INBOX to ensure we're in the right folder
-    session.select("INBOX").await?;
+    session.select(source_mailbox).await?;
     
     // Search for the message by its Message-ID header
     let search_result = session.search(format!("HEADER Message-ID {}", message_id)).await?;
@@ -87,13 +89,19 @@ pub async fn move_to_spam(
         .ok_or_else(|| anyhow::anyhow!("No UID found"))?;
     
     // Move the message to the spam folder using UID
-    session.uid_mv(uid.to_string(), "Spam").await?;
+    session.uid_mv(uid.to_string(),     target_mailbox,
+).await?;
     info!("Moved message {} to spam folder", message_id);
     
     Ok(())
 }
 
-pub async fn move_message_to_spam(mail_settings: Settings, message_id: String) -> Result<(), Box<dyn StdError + Send + Sync>> {
+pub async fn move_email_with_authentication(
+    mail_settings: Settings, 
+    message_id: String, 
+    source_mailbox: &str, 
+    target_mailbox: &str
+) -> Result<(), Box<dyn StdError + Send + Sync>> {
     // Get credentials
     let (username, password) = encryption::get_credentials(mail_settings.email_address.as_str())?;
     
@@ -106,7 +114,7 @@ pub async fn move_message_to_spam(mail_settings: Settings, message_id: String) -
     let mut imap_session = login_to_server(client, &username, &password).await?;
     
     // Move message to spam
-    if let Err(e) = move_to_spam(&mut imap_session, &message_id).await {
+    if let Err(e) = move_message_by_message_id(&mut imap_session, &message_id, source_mailbox, target_mailbox).await {
         error!("Failed to move message to spam: {}", e);
         return Err(e.into());
     }

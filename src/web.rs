@@ -3,7 +3,7 @@ use tera::Tera;
 use std::sync::Arc;
 use crate::mail_reader::message::Message;
 use crate::mail_reader::imap::fetch_messages_from_server;
-use crate::mail_reader::imap::move_message_to_spam;
+use crate::mail_reader::imap::move_email_with_authentication;
 use crate::settings::Settings;
 use log::{info, error};
 use urlencoding;
@@ -48,7 +48,7 @@ async fn move_to_spam(
     message_id: String,
     settings: Settings,
 ) -> Result<Redirect, AppError> {
-    let _ = move_message_to_spam(settings, message_id).await;
+    let _ = move_email_with_authentication(settings, message_id, "INBOX", "Spam").await;
 
     Ok(Redirect::to("/"))
 }
