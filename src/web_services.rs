@@ -1,7 +1,6 @@
 use axum::{Router, routing::get};
 use crate::settings::Settings;
 use crate::mail_reader::imap::fetch_messages_from_server;
-use std::error::Error;
 use axum::{
     response::{IntoResponse, Response},
     Json,
@@ -46,14 +45,23 @@ async fn get_data(settings: Settings) -> Result<Json<String>, AppError> {
     Ok(Json(json))
 }
 
-pub async fn entrypoint(settings: Settings) -> Result<(), Box<dyn Error>> {
-
-    // build our application with a route
+pub async fn entrypoint(settings: Settings) -> Result<(), Box<dyn std::error::Error>> {
+    // Clone settings once at the start instead of multiple times
+    let settings_clone = settings.clone();
+    
+    // Build our application with a route
     let app = Router::new()
-        .route("/api/v1/emails", get(move || get_data(settings.clone())));
+        .route("/api/v1/emails", get(move || get_data(settings_clone)));
 
-    // run our app with hyper, listening globally on port 3000
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3001").await?;
+    // Run our app with hyper
+    let addr = format!(
+        "{}:{}", 
+        settings.rest_server_hostname, 
+        settings.rest_server_port
+    );
+    
+    let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
+    
     Ok(())
 }

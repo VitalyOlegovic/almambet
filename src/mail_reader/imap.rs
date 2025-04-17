@@ -106,7 +106,7 @@ pub async fn move_email_with_authentication(
     let (username, password) = encryption::get_credentials(mail_settings.email_address.as_str())?;
     
     // Connect to server
-    let tls_stream = connect_to_server(mail_settings.imap_server.as_str(), mail_settings.port).await?;
+    let tls_stream = connect_to_server(mail_settings.imap_server.as_str(), mail_settings.imap_server_port).await?;
     let compat_stream = tls_stream.compat();
     let client = Client::new(compat_stream);
     
@@ -130,7 +130,7 @@ pub async fn fetch_messages_from_server(mail_settings: Settings) -> Result<Vec<M
     let (username, password) = encryption::get_credentials(mail_settings.email_address.as_str())?;
     
     // Connect to server
-    let tls_stream = connect_to_server(mail_settings.imap_server.as_str(), mail_settings.port).await?;
+    let tls_stream = connect_to_server(mail_settings.imap_server.as_str(), mail_settings.imap_server_port).await?;
     let compat_stream = tls_stream.compat();
     let client = Client::new(compat_stream);
     

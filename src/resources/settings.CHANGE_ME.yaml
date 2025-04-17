@@ -1,4 +1,6 @@
 imap_server: "imap.example.com"
-port: 993
+imap_server_port: 993
 email_address: "user@example.com"
 spam_filter_interval_seconds: 5
+rest_server_hostname: 0.0.0.0
+rest_server_port: 3000

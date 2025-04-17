@@ -4,14 +4,16 @@ use std::fs::File;
 use std::io::BufReader;
 use serde_yaml::Error;
 use backtrace::Backtrace;
-use log::{error};
+use log::error;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
     pub imap_server: String,
-    pub port: u16,
+    pub imap_server_port: u16,
     pub email_address: String,
     pub spam_filter_interval_seconds: u16,
+    pub rest_server_hostname: String,
+    pub rest_server_port: u16,
 }
 
 pub fn load_settings() -> Result<Settings, Error> {
