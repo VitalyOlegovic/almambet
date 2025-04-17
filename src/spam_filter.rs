@@ -2,17 +2,18 @@ pub mod spam_filter_settings;
 
 use crate::spam_filter::spam_filter_settings::SpamFilterSettings;
 use tokio::time::Duration;
-use crate::{mail_reader::message::Message, settings::Settings};
+use crate::{mail_reader::message::Message, settings::Config};
 use crate::spam_filter::spam_filter_settings::load_spam_filter_settings;
-use crate::mail_reader::imap::move_email_with_authentication;
-use crate::mail_reader::imap::fetch_messages_from_server;
+use crate::mail_reader::imap::{move_email_with_authentication, fetch_messages_from_server, create_session};
 use tokio_cron_scheduler::{Job, JobScheduler};
-use log::{info,error};
+use log::{debug,info,error};
 use regex::Regex;
 
 fn match_string(string: &str, pattern: &str) -> bool {
     let regex = Regex::new(pattern).unwrap();
-    regex.is_match(string)
+    let result = regex.is_match(string);
+    debug!("String {} pattern {} result {}", &string[..50.min(string.len())], pattern, result.to_string());
+    result
 }
 
 fn match_many_strings(string: &str, patterns: &Vec<String>) -> bool {
@@ -36,16 +37,18 @@ pub fn check_message_spam(message: &Message, spam_filter_settings: &SpamFilterSe
     from_matches || title_matches || body_matches
 }
 
-async fn spam_filter(settings: &Settings) {
-    // TODO Implement your spam filter logic here
+async fn spam_filter(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
     info!("Spam filter running");
     let spam_filter_settings = load_spam_filter_settings().unwrap();
-    let messages = fetch_messages_from_server(&settings, 100).await.unwrap();
+    let mut imap_session = create_session(config).await?;
+    let messages = fetch_messages_from_server(& mut imap_session, 10).await.unwrap();
     for message in &messages{
         if check_message_spam(message, &spam_filter_settings){
+            info!("The message {} is spam, trying to move it", message.subject);
             match &message.message_id {
                 Some(id) => {
-                    let _ = move_email_with_authentication(settings, id.to_string(), "INBOX", "Spam").await;
+                    info!("The spam message id is {}", id);
+                    let _ = move_email_with_authentication(&mut imap_session, id.to_string(), "INBOX", "Spam").await;
                 }
                 None => {
                     error!("Cannot move spam message to spam folder.")
@@ -54,22 +57,27 @@ async fn spam_filter(settings: &Settings) {
             
         }
     }
+
+    // Be nice to the server and log out
+    imap_session.logout().await?;
+
+    Ok(())
 }
 
-pub async fn entrypoint(settings: &Settings) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn entrypoint(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
     let sched = JobScheduler::new().await?;
     
     // Clone settings for the closure
-    let settings_clone = settings.clone();
+    let settings_clone = config.clone();
     
     // Add a job that runs every 5 seconds
     sched.add(
         Job::new_repeated_async(
-            Duration::from_secs(settings.spam_filter_interval_seconds.into()), 
+            Duration::from_secs(config.spam_filter.interval_seconds.into()), 
             move |_uuid, _l| {
                 let settings = settings_clone.clone();
                 Box::pin(async move {
-                    spam_filter(&settings).await;
+                    let _ = spam_filter(&settings).await;
                 })
         })?
     ).await?;

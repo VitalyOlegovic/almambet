@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result,Error};
 use async_imap::{Client, Session};
 use futures::TryStreamExt;
 use tokio::net::TcpStream;
@@ -6,9 +6,11 @@ use tokio_util::compat::{Compat, TokioAsyncReadCompatExt};
 use std::error::Error as StdError;
 
 use crate::mail_reader::message::Message;
-use crate::settings::Settings;
+use crate::settings::Config;
 use crate::mail_reader::encryption;
-use log::{info, error};
+use log::{debug, info, error};
+
+pub type ImapSession = Session<Compat<tokio_native_tls::TlsStream<tokio::net::TcpStream>>>;
 
 // Establish a TLS-encrypted connection to the IMAP server
 async fn connect_to_server(server: &str, port: u16) -> Result<tokio_native_tls::TlsStream<TcpStream>> {
@@ -17,7 +19,7 @@ async fn connect_to_server(server: &str, port: u16) -> Result<tokio_native_tls::
     let tls = tokio_native_tls::TlsConnector::from(native_tls::TlsConnector::new()?);
     let tls_stream = tls.connect(server, tcp_stream).await?;
     
-    info!("-- connected to {}:{}", server, port);
+    info!("connected to {}:{}", server, port);
     Ok(tls_stream)
 }
 
@@ -32,7 +34,7 @@ async fn login_to_server(
         .await
         .map_err(|e| e.0)?;
     
-    info!("-- logged in as {}", username);
+    info!("logged in as {}", username);
     Ok(imap_session)
 }
 
@@ -49,7 +51,7 @@ async fn fetch_messages(
     count: u32
 ) -> Result<Vec<Message>> {
     let mailbox_data = session.select(mailbox).await?;
-    info!("-- {} selected", mailbox);
+    info!("{} selected", mailbox);
     
     let total_messages = mailbox_data.exists;
     let range = calculate_message_range(total_messages, count);
@@ -73,6 +75,8 @@ pub async fn move_message_by_message_id(
     source_mailbox: &str,
     target_mailbox: &str,
 ) -> Result<()> {
+    debug!("move_message_by_message_id message_id {} source {} target {}", message_id, source_mailbox, target_mailbox);
+
     // First, select the INBOX to ensure we're in the right folder
     session.select(source_mailbox).await?;
     
@@ -89,59 +93,52 @@ pub async fn move_message_by_message_id(
         .ok_or_else(|| anyhow::anyhow!("No UID found"))?;
     
     // Move the message to the spam folder using UID
-    session.uid_mv(uid.to_string(),     target_mailbox,
-).await?;
+    session.uid_mv(uid.to_string(), target_mailbox).await?;
     info!("Moved message {} to spam folder", message_id);
     
     Ok(())
 }
 
 pub async fn move_email_with_authentication(
-    mail_settings: &Settings, 
+    imap_session: &mut ImapSession,
     message_id: String, 
     source_mailbox: &str, 
     target_mailbox: &str
 ) -> Result<(), Box<dyn StdError + Send + Sync>> {
-    // Get credentials
-    let (username, password) = encryption::get_credentials(mail_settings.email_address.as_str())?;
-    
-    // Connect to server
-    let tls_stream = connect_to_server(mail_settings.imap_server.as_str(), mail_settings.imap_server_port).await?;
-    let compat_stream = tls_stream.compat();
-    let client = Client::new(compat_stream);
-    
-    // Log in
-    let mut imap_session = login_to_server(client, &username, &password).await?;
+    debug!("move_email_with_authentication message_id {} source {} target {}", message_id, source_mailbox, target_mailbox);
     
     // Move message to spam
-    if let Err(e) = move_message_by_message_id(&mut imap_session, &message_id, source_mailbox, target_mailbox).await {
+    if let Err(e) = move_message_by_message_id(imap_session, &message_id, source_mailbox, target_mailbox).await {
         error!("Failed to move message to spam: {}", e);
         return Err(e.into());
     }
     
-    // Be nice to the server and log out
-    imap_session.logout().await?;
-    
     Ok(())
 }
 
-pub async fn fetch_messages_from_server(mail_settings: &Settings, count: u32) -> Result<Vec<Message>, Box<dyn std::error::Error>> {
+pub async fn create_session(config: &Config) -> Result<ImapSession, Error>{
     // Get credentials
-    let (username, password) = encryption::get_credentials(mail_settings.email_address.as_str())?;
-    
+    let (username, password) = encryption::get_credentials(config.imap.username.as_str())?;
+        
     // Connect to server
-    let tls_stream = connect_to_server(mail_settings.imap_server.as_str(), mail_settings.imap_server_port).await?;
+    let tls_stream = connect_to_server(config.imap.server.as_str(), config.imap.port).await?;
     let compat_stream = tls_stream.compat();
     let client = Client::new(compat_stream);
-    
+
     // Log in
-    let mut imap_session = login_to_server(client, &username, &password).await?;
+    let imap_session = login_to_server(client, &username, &password).await?;
+
+    Ok(imap_session)
+}
+
+pub async fn fetch_messages_from_server(imap_session: &mut ImapSession, count: u32) -> Result<Vec<Message>, Box<dyn std::error::Error>> {
+    
     
     // Fetch messages
-    let messages = fetch_messages(&mut imap_session, "INBOX", count).await?;
+    let messages = fetch_messages(imap_session, "INBOX", count).await?;
     
     // Be nice to the server and log out
-    imap_session.logout().await?;
+    //imap_session.logout().await?;
     
     Ok(messages)
 } 

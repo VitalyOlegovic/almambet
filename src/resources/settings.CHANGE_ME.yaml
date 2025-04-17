@@ -1,6 +1,13 @@
-imap_server: "imap.example.com"
-imap_server_port: 993
-email_address: "user@example.com"
-spam_filter_interval_seconds: 5
-rest_server_hostname: 0.0.0.0
-rest_server_port: 3000
+imap:
+  server: "imap.example.com"
+  port: 993
+  username: "user@example.com"
+
+# Spam filter settings
+spam_filter:
+  check_interval: 60                # Check interval in seconds
+
+# REST API server configuration
+server:
+  host: "0.0.0.0"                  # Bind to all network interfaces
+  port: 3000

@@ -1,6 +1,6 @@
 use axum::{Router, routing::get};
-use crate::settings::Settings;
-use crate::mail_reader::imap::fetch_messages_from_server;
+use crate::settings::Config;
+use crate::mail_reader::imap::{fetch_messages_from_server, create_session};
 use axum::{
     response::{IntoResponse, Response},
     Json,
@@ -30,8 +30,10 @@ impl IntoResponse for AppError {
     }
 }
 
-async fn get_data(settings: Settings) -> Result<Json<String>, AppError> {
-    let emails = fetch_messages_from_server(&settings, 10)
+async fn get_data(config: Config) -> Result<Json<String>, AppError> {
+    let mut imap_session = create_session(&config).await.unwrap();
+
+    let emails = fetch_messages_from_server(&mut imap_session, 10)
         .await
         .map_err(|e| AppError {
             message: e.to_string(),
@@ -42,12 +44,15 @@ async fn get_data(settings: Settings) -> Result<Json<String>, AppError> {
             message: e.to_string(),
         })?;
 
+    // Be nice to the server and log out
+    imap_session.logout().await.unwrap();
+
     Ok(Json(json))
 }
 
-pub async fn entrypoint(settings: &Settings) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn entrypoint(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
     // Clone settings once at the start instead of multiple times
-    let settings_clone = settings.clone();
+    let settings_clone = config.clone();
     
     // Build our application with a route
     let app = Router::new()
@@ -56,8 +61,8 @@ pub async fn entrypoint(settings: &Settings) -> Result<(), Box<dyn std::error::E
     // Run our app with hyper
     let addr = format!(
         "{}:{}", 
-        settings.rest_server_hostname, 
-        settings.rest_server_port
+        config.server.host, 
+        config.server.port
     );
     
     let listener = tokio::net::TcpListener::bind(addr).await?;

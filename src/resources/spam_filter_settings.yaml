@@ -1,8 +1,8 @@
 from_regular_expressions:
+  - "@nw\\."
   - "maildelgiorno\\.it>$"
   - "nuovapromo\\.it>$"
   - "wifi2fly\\.com>$"
-  - "nuovapromo\\.it>$"
   - "serviziocontrattipubblici\\.com>$"
   - "sfr\\.fr>$"
 

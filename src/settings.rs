@@ -6,17 +6,37 @@ use serde_yaml::Error;
 use backtrace::Backtrace;
 use log::error;
 
+// Main configuration struct
 #[derive(Debug, Deserialize, Clone)]
-pub struct Settings {
-    pub imap_server: String,
-    pub imap_server_port: u16,
-    pub email_address: String,
-    pub spam_filter_interval_seconds: u16,
-    pub rest_server_hostname: String,
-    pub rest_server_port: u16,
+pub struct Config {
+    pub imap: ImapConfig,
+    pub spam_filter: SpamFilterConfig,
+    pub server: ServerConfig,
 }
 
-pub fn load_settings() -> Result<Settings, Error> {
+// IMAP configuration
+#[derive(Debug, Deserialize, Clone)]
+pub struct ImapConfig {
+    pub server: String,
+    pub port: u16,
+    pub username: String,
+}
+
+// Spam filter configuration
+#[derive(Debug, Deserialize, Clone)]
+pub struct SpamFilterConfig {
+    #[serde(rename = "check_interval")]
+    pub interval_seconds: u64,
+}
+
+// REST server configuration
+#[derive(Debug, Deserialize, Clone)]
+pub struct ServerConfig {
+    pub host: String,
+    pub port: u16,
+}
+
+pub fn load_settings() -> Result<Config, Error> {
     // Open the YAML file
     let file = File::open("src/resources/settings.yaml");
     let file = match file {
@@ -34,9 +54,9 @@ pub fn load_settings() -> Result<Settings, Error> {
     let reader = BufReader::new(file);
 
     // Parse the YAML file into the Settings struct
-    let settings= serde_yaml::from_reader(reader);
-    let settings: Settings = match settings {
-        Ok(settings) => settings,
+    let config_result= serde_yaml::from_reader(reader);
+    let config: Config = match config_result {
+        Ok(config) => config,
         Err(err) => {
             error!("Error: {}", err);
         
@@ -47,5 +67,5 @@ pub fn load_settings() -> Result<Settings, Error> {
         }
     };
 
-    Ok(settings)
+    Ok(config)
 }

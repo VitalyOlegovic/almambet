@@ -2,9 +2,8 @@ use axum::{response::Html, routing::get, Router, Extension, response::Redirect};
 use tera::Tera;
 use std::sync::Arc;
 use crate::mail_reader::message::Message;
-use crate::mail_reader::imap::fetch_messages_from_server;
-use crate::mail_reader::imap::move_email_with_authentication;
-use crate::settings::Settings;
+use crate::mail_reader::imap::{fetch_messages_from_server, move_email_with_authentication, create_session};
+use crate::settings::Config;
 use log::{info, error};
 use urlencoding;
 use anyhow::Error;
@@ -46,9 +45,10 @@ async fn render_email_detail(
 
 async fn move_to_spam(
     message_id: String,
-    settings: Settings,
+    config: &Config,
 ) -> Result<Redirect, AppError> {
-    let _ = move_email_with_authentication(&settings, message_id, "INBOX", "Spam").await;
+    let mut imap_session = create_session(&config).await?;
+    let _ = move_email_with_authentication(&mut imap_session, message_id, "INBOX", "Spam").await;
 
     Ok(Redirect::to("/"))
 }
@@ -63,14 +63,14 @@ async fn start_server(router: Router) -> Result<(), AppError> {
 fn create_router(
     messages: Arc<Vec<Message>>,
     tera: Arc<Tera>,
-    settings: &Settings,
+    config: &Config,
 ) -> Router {
     let messages_for_list = messages.clone();
     let tera_for_list = tera.clone();
     let messages_for_detail = messages.clone();
     let tera_for_detail = tera.clone();
     let tera_for_error = tera.clone();
-    let settings_for_spam = settings.clone();
+    let settings_for_spam = config.clone();
     
     Router::new()
         .route("/", get(move || async move {
@@ -86,7 +86,7 @@ fn create_router(
             }
         }))
         .route("/email/:message_id/spam", get(move |axum::extract::Path(message_id)| async move {
-            match move_to_spam(message_id, settings_for_spam.clone()).await {
+            match move_to_spam(message_id, &settings_for_spam.clone()).await {
                 Ok(redirect) => redirect,
                 Err(e) => Redirect::to(&format!("/error?message={}", urlencoding::encode(&format!("Error moving to spam: {}", e))))
             }
@@ -98,19 +98,21 @@ fn create_router(
         .layer(Extension(tera.clone()))
 }
 
-pub async fn start_web_server(messages: Vec<Message>, settings: &Settings) -> Result<(), AppError> {
+pub async fn start_web_server(messages: Vec<Message>, config: &Config) -> Result<(), AppError> {
     let tera = Arc::new(Tera::new("templates/**/*.html")?);
     let messages = Arc::new(messages);
     
-    let router = create_router(Arc::clone(&messages), Arc::clone(&tera), settings);
+    let router = create_router(Arc::clone(&messages), Arc::clone(&tera), config);
     start_server(router).await
 }
 
-pub async fn entrypoint(settings: &Settings) -> Result<(), Box<dyn std::error::Error>> {
-    let result = fetch_messages_from_server(&settings, 10).await;
+pub async fn entrypoint(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
+    let mut imap_session = create_session(config).await?;
+
+    let result = fetch_messages_from_server(&mut imap_session, 10).await;
     match result {
         Ok(messages) => {
-            if let Err(e) = start_web_server(messages, settings).await {
+            if let Err(e) = start_web_server(messages, config).await {
                 error!("Error starting web server: {}", e);
                 return Err(e.into());
             }else{

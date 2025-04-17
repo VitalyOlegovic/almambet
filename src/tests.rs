@@ -8,12 +8,12 @@ mod tests {
     #[test]
     fn test_spam_filter_matches_domain() {
         let settings = SpamFilterSettings {
-            from_regular_expressions: vec![r"maildelgiorno\.it$".to_string()],
+            from_regular_expressions: vec![r"nuovapromo\\.it$".to_string()],
             ..Default::default()
         };
         
         let spam_message = Message {
-            from: "support@nw.maildelgiorno.it".to_string(),
+            from: "support@nw.nuovapromo.it".to_string(),
             ..Default::default()
         };
         
