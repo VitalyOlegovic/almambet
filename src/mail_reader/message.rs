@@ -1,9 +1,8 @@
 use anyhow::{bail, Result};
 use mailparse::{parse_mail, MailHeaderMap};
 use serde::{Serialize, Deserialize};
-use log::warn;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Message {
     pub subject: String,
     pub from: String,
@@ -35,11 +34,6 @@ fn extract_attachments(parsed_mail: &mailparse::ParsedMail) -> Result<Vec<Attach
         
         let content_disposition = part.headers.get_first_value("Content-Disposition")
             .unwrap_or_default();
-
-        // Log unknown content types
-        if content_type != "text/plain" && !content_type.starts_with("multipart/") {
-            warn!("Unknown content type: {}", content_type);
-        }
 
         // Check if this is an attachment
         if content_disposition.to_lowercase().contains("attachment") {

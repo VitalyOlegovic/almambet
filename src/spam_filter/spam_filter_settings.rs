@@ -6,7 +6,7 @@ use serde_yaml::Error;
 use backtrace::Backtrace;
 use log::error;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Default, Deserialize, Clone)]
 pub struct SpamFilterSettings {
     pub from_regular_expressions: Vec<String>,
     pub title_regular_expressions: Vec<String>,

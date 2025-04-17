@@ -1,6 +1,6 @@
-mod spam_filter_settings;
+pub mod spam_filter_settings;
 
-use spam_filter_settings::SpamFilterSettings;
+use crate::spam_filter::spam_filter_settings::SpamFilterSettings;
 use tokio::time::Duration;
 use crate::{mail_reader::message::Message, settings::Settings};
 use crate::spam_filter::spam_filter_settings::load_spam_filter_settings;
@@ -10,24 +10,27 @@ use tokio_cron_scheduler::{Job, JobScheduler};
 use log::{info,error};
 use regex::Regex;
 
+fn match_string(string: &str, pattern: &str) -> bool {
+    let regex = Regex::new(pattern).unwrap();
+    regex.is_match(string)
+}
 
-fn check_message_spam(message: &Message, spam_filter_settings: &SpamFilterSettings) -> bool {
+fn match_many_strings(string: &str, patterns: &Vec<String>) -> bool {
+    patterns.iter().any(|pattern| match_string(string, pattern))
+}
+
+pub fn check_message_spam(message: &Message, spam_filter_settings: &SpamFilterSettings) -> bool {
     // Check "from" patterns
-    let from_matches = spam_filter_settings.from_regular_expressions
-        .iter()
-        .any(|pattern| Regex::new(pattern).map_or(false, |re| re.is_match(&message.from)));
+    let from_matches = match_many_strings(&message.from, &spam_filter_settings.from_regular_expressions);
 
     // Check "title" patterns if you have them
-    let title_matches = spam_filter_settings.title_regular_expressions
-        .iter()
-        .any(|pattern| Regex::new(pattern).map_or(false, |re| re.is_match(&message.subject)));
+    let title_matches = match_many_strings(&message.subject, &spam_filter_settings.title_regular_expressions);
 
     // Check "body" patterns if you have them
-    let body_matches = spam_filter_settings.body_regular_expressions
-        .iter()
-        .any(|pattern| Regex::new(pattern).map_or(
-            false, 
-            |re| re.is_match(&message.content.clone().unwrap().clone().as_ref())));
+    let body_matches = match_many_strings(
+        &message.content.clone().unwrap().as_ref(), 
+        &spam_filter_settings.body_regular_expressions
+    );
 
     // Return true if any pattern matches (message is spam)
     from_matches || title_matches || body_matches
@@ -37,7 +40,7 @@ async fn spam_filter(settings: &Settings) {
     // TODO Implement your spam filter logic here
     info!("Spam filter running");
     let spam_filter_settings = load_spam_filter_settings().unwrap();
-    let messages = fetch_messages_from_server(&settings, 10).await.unwrap();
+    let messages = fetch_messages_from_server(&settings, 100).await.unwrap();
     for message in &messages{
         if check_message_spam(message, &spam_filter_settings){
             match &message.message_id {

@@ -1,7 +1,10 @@
 from_regular_expressions:
-  - "^spammer@.*$"
-  - ".*@dodgydomain\\.com$"
-  - "noreply@.*"
+  - "maildelgiorno\\.it>$"
+  - "nuovapromo\\.it>$"
+  - "wifi2fly\\.com>$"
+  - "nuovapromo\\.it>$"
+  - "serviziocontrattipubblici\\.com>$"
+  - "sfr\\.fr>$"
 
 title_regular_expressions:
   - "^\\[SPAM\\]"

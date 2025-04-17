@@ -3,6 +3,7 @@ mod web;
 mod web_services;
 mod spam_filter;
 mod settings;
+mod tests;
 use std::error::Error as StdError;
 use fern;
 
