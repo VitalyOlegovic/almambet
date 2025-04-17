@@ -30,8 +30,8 @@ async fn main() -> Result<(), Box<dyn StdError>> {
 
     let settings = settings::load_settings().unwrap();
     
-    let _ = spam_filter::entrypoint(settings.clone()).await; // TODO: Remove
-    let _ = web::entrypoint(settings.clone()).await;
-    let _ = web_services::entrypoint(settings).await;
+    let _ = spam_filter::entrypoint(&settings).await; // TODO: Remove
+    let _ = web::entrypoint(&settings).await;
+    let _ = web_services::entrypoint(&settings).await;
     Ok(())
 }

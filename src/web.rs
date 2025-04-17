@@ -48,7 +48,7 @@ async fn move_to_spam(
     message_id: String,
     settings: Settings,
 ) -> Result<Redirect, AppError> {
-    let _ = move_email_with_authentication(settings, message_id, "INBOX", "Spam").await;
+    let _ = move_email_with_authentication(&settings, message_id, "INBOX", "Spam").await;
 
     Ok(Redirect::to("/"))
 }
@@ -63,7 +63,7 @@ async fn start_server(router: Router) -> Result<(), AppError> {
 fn create_router(
     messages: Arc<Vec<Message>>,
     tera: Arc<Tera>,
-    settings: Settings,
+    settings: &Settings,
 ) -> Router {
     let messages_for_list = messages.clone();
     let tera_for_list = tera.clone();
@@ -98,7 +98,7 @@ fn create_router(
         .layer(Extension(tera.clone()))
 }
 
-pub async fn start_web_server(messages: Vec<Message>, settings: Settings) -> Result<(), AppError> {
+pub async fn start_web_server(messages: Vec<Message>, settings: &Settings) -> Result<(), AppError> {
     let tera = Arc::new(Tera::new("templates/**/*.html")?);
     let messages = Arc::new(messages);
     
@@ -106,8 +106,8 @@ pub async fn start_web_server(messages: Vec<Message>, settings: Settings) -> Res
     start_server(router).await
 }
 
-pub async fn entrypoint(settings: Settings) -> Result<(), Box<dyn std::error::Error>> {
-    let result = fetch_messages_from_server(settings.clone()).await;
+pub async fn entrypoint(settings: &Settings) -> Result<(), Box<dyn std::error::Error>> {
+    let result = fetch_messages_from_server(&settings, 10).await;
     match result {
         Ok(messages) => {
             if let Err(e) = start_web_server(messages, settings).await {

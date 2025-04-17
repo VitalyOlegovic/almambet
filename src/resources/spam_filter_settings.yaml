@@ -1,0 +1,17 @@
+from_regular_expressions:
+  - "^spammer@.*$"
+  - ".*@dodgydomain\\.com$"
+  - "noreply@.*"
+
+title_regular_expressions:
+  - "^\\[SPAM\\]"
+  - ".*viagra.*"
+  - ".*make money fast.*"
+  - "URGENT!"
+
+body_regular_expressions:
+  - "click this link: http://malicious\\.site"
+  - "limited time offer"
+  - "you've won.*prize"
+  - "account.*suspended"
+  - "password.*expired"

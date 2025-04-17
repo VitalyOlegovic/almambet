@@ -31,7 +31,7 @@ impl IntoResponse for AppError {
 }
 
 async fn get_data(settings: Settings) -> Result<Json<String>, AppError> {
-    let emails = fetch_messages_from_server(settings)
+    let emails = fetch_messages_from_server(&settings, 10)
         .await
         .map_err(|e| AppError {
             message: e.to_string(),
@@ -45,7 +45,7 @@ async fn get_data(settings: Settings) -> Result<Json<String>, AppError> {
     Ok(Json(json))
 }
 
-pub async fn entrypoint(settings: Settings) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn entrypoint(settings: &Settings) -> Result<(), Box<dyn std::error::Error>> {
     // Clone settings once at the start instead of multiple times
     let settings_clone = settings.clone();
     

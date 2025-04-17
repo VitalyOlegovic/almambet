@@ -97,7 +97,7 @@ pub async fn move_message_by_message_id(
 }
 
 pub async fn move_email_with_authentication(
-    mail_settings: Settings, 
+    mail_settings: &Settings, 
     message_id: String, 
     source_mailbox: &str, 
     target_mailbox: &str
@@ -125,7 +125,7 @@ pub async fn move_email_with_authentication(
     Ok(())
 }
 
-pub async fn fetch_messages_from_server(mail_settings: Settings) -> Result<Vec<Message>, Box<dyn std::error::Error>> {
+pub async fn fetch_messages_from_server(mail_settings: &Settings, count: u32) -> Result<Vec<Message>, Box<dyn std::error::Error>> {
     // Get credentials
     let (username, password) = encryption::get_credentials(mail_settings.email_address.as_str())?;
     
@@ -138,7 +138,7 @@ pub async fn fetch_messages_from_server(mail_settings: Settings) -> Result<Vec<M
     let mut imap_session = login_to_server(client, &username, &password).await?;
     
     // Fetch messages
-    let messages = fetch_messages(&mut imap_session, "INBOX", 10).await?;
+    let messages = fetch_messages(&mut imap_session, "INBOX", count).await?;
     
     // Be nice to the server and log out
     imap_session.logout().await?;

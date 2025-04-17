@@ -80,6 +80,7 @@ dependencies = [
  "mailparse",
  "native-tls",
  "rand",
+ "regex",
  "rpassword",
  "serde",
  "serde_json",
