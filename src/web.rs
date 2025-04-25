@@ -43,12 +43,13 @@ async fn render_email_detail(
     Ok(Html(html))
 }
 
-async fn move_to_spam(
+async fn move_message(
     message_id: String,
+    target_folder: String,
     config: &Config,
 ) -> Result<Redirect, AppError> {
     let mut imap_session = create_session(&config).await?;
-    let _ = move_email_with_authentication(&mut imap_session, message_id, "INBOX", "Spam").await;
+    let _ = move_email_with_authentication(&mut imap_session, message_id, "INBOX", &target_folder).await;
 
     Ok(Redirect::to("/"))
 }
@@ -70,7 +71,7 @@ fn create_router(
     let messages_for_detail = messages.clone();
     let tera_for_detail = tera.clone();
     let tera_for_error = tera.clone();
-    let settings_for_spam = config.clone();
+    let settings_for_move_message = config.clone();
     
     Router::new()
         .route("/", get(move || async move {
@@ -85,12 +86,14 @@ fn create_router(
                 Err(e) => render_error(tera_for_detail.clone(), format!("Error loading email: {}", e)).await
             }
         }))
-        .route("/email/:message_id/spam", get(move |axum::extract::Path(message_id)| async move {
-            match move_to_spam(message_id, &settings_for_spam.clone()).await {
-                Ok(redirect) => redirect,
-                Err(e) => Redirect::to(&format!("/error?message={}", urlencoding::encode(&format!("Error moving to spam: {}", e))))
+        .route("/email/:message_id/move/:target_folder", get(
+            move |axum::extract::Path((message_id, target_folder)): axum::extract::Path<(String, String)>| async move {
+                match move_message(message_id, target_folder, &settings_for_move_message.clone()).await {
+                    Ok(redirect) => redirect,
+                    Err(e) => Redirect::to(&format!("/error?message={}", urlencoding::encode(&format!("Error moving message: {}", e))))
+                }
             }
-        }))
+        ))
         .route("/error", get(move |axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>| async move {
             let error_message = params.get("message").cloned().unwrap_or_else(|| "Unknown error".to_string());
             render_error(tera_for_error.clone(), error_message).await

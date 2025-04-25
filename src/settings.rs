@@ -10,11 +10,10 @@ use log::error;
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub imap: ImapConfig,
-    pub spam_filter: SpamFilterConfig,
+    pub mail_mover: MailMoverConfig,
     pub server: ServerConfig,
 }
 
-// IMAP configuration
 #[derive(Debug, Deserialize, Clone)]
 pub struct ImapConfig {
     pub server: String,
@@ -22,9 +21,9 @@ pub struct ImapConfig {
     pub username: String,
 }
 
-// Spam filter configuration
+
 #[derive(Debug, Deserialize, Clone)]
-pub struct SpamFilterConfig {
+pub struct MailMoverConfig {
     #[serde(rename = "check_interval")]
     pub interval_seconds: u64,
 }

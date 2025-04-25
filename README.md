@@ -7,44 +7,6 @@ A secure and efficient email reader application built with Rust, featuring IMAP 
 
 The name "Almambet" is inspired by a significant character from the Kyrgyz epic poem "Manas". Almambet was a loyal friend and trusted advisor to Manas, the epic's protagonist. He was known for his wisdom, bravery, and unwavering loyalty. Like the character Almambet who served as a reliable messenger and advisor, this application serves as a trustworthy tool for managing and delivering your email communications.
 
-## Features
-
-- **Secure Email Access**: Connect to IMAP servers to fetch and read emails
-- **Web Interface**: View emails through a modern web interface built with Axum
-- **Template Rendering**: Uses Tera templates for email display
-- **Secure Credential Storage**: Encrypted storage of email credentials
-- **Logging**: Comprehensive logging system for monitoring and debugging
-
-## Project Structure
-
-```
-almambet/
-├── src/
-│   ├── main.rs              # Application entry point
-│   ├── web.rs               # Web server implementation
-│   ├── mail_reader.rs       # Main mail reader module
-│   └── mail_reader/
-│       ├── imap.rs          # IMAP client implementation
-│       ├── message.rs       # Email message handling
-│       ├── settings.rs      # Configuration management
-│       ├── display.rs       # Email display formatting
-│       └── encryption.rs    # Credential encryption
-├── templates/               # HTML templates
-├── resources/              # Static resources
-├── Cargo.toml             # Project dependencies
-└── README.md              # This file
-```
-
-## Dependencies
-
-- **axum**: Web framework
-- **tera**: Template engine
-- **imap**: IMAP client library
-- **native-tls**: TLS support
-- **serde**: Serialization/deserialization
-- **chrono**: Date and time handling
-- **log**: Logging framework
-
 ## Configuration
 
 The application requires the following configuration files:
@@ -80,17 +42,48 @@ The web interface will be available at `http://localhost:3000`.
 
 ## Configuration
 
-The application requires a `config.yaml` file with the following structure:
+The application requires a `settings.yaml` file with the following structure:
 
 ```yaml
-email_address: "your.email@example.com"
-imap_server: "imap.example.com"
-port: 993
+imap:
+  server: "imap.example.com"
+  port: 993
+  username: "user@example.com"
+
+# Massage filter settings
+mail_mover:
+  check_interval: 60                # Check interval in seconds
+
+# REST API server configuration
+server:
+  host: "0.0.0.0"                  # Bind to all network interfaces
+  port: 3000
 ```
+It is also required an `email_move_rules.yaml` file like this:
 
-## Security Features
-
-- TLS encryption for IMAP connections
-- AES-256-GCM encryption for stored passwords
-- Secure key management
-- Password caching with encryption
+```yaml
+messages_to_check: 1500
+rules:
+  - rule:
+      target_folder: "SPAM"
+      from:
+        - "@phishing\\.net>$"
+        - "@scam\\.xyz>$"
+        - "promo@shopping\\.biz>$"
+        - "noreply@lottery\\.win>$"
+        - "account@fakebank\\.com>$"
+      
+      title:
+        - "URGENT: Account Verification Required"
+        - "You Won a Prize!"
+        - "Limited Time Offer"
+        - "Exclusive Deal Just For You"
+        - ".*password.*expir.*"
+      
+      body:
+        - "click here to claim your prize"
+        - "limited time offer, act now"
+        - "your account will be suspended"
+        - "verify your identity immediately"
+        - "special discount just for you"
+```

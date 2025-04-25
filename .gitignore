@@ -1,5 +1,6 @@
 /target
 settings.yaml
+email_move_rules.yaml
 .encrypted_password
 .encryption_key
 *.log

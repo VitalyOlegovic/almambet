@@ -1,0 +1,76 @@
+messages_to_check: 1500
+rules:
+  - rule:
+      target_folder: "SPAM"
+      from:
+        - "@phishing\\.net>$"
+        - "@scam\\.xyz>$"
+        - "promo@shopping\\.biz>$"
+        - "noreply@lottery\\.win>$"
+        - "account@fakebank\\.com>$"
+      
+      title:
+        - "URGENT: Account Verification Required"
+        - "You Won a Prize!"
+        - "Limited Time Offer"
+        - "Exclusive Deal Just For You"
+        - ".*password.*expir.*"
+      
+      body:
+        - "click here to claim your prize"
+        - "limited time offer, act now"
+        - "your account will be suspended"
+        - "verify your identity immediately"
+        - "special discount just for you"
+
+  - rule:
+      target_folder: "PROMOTIONS"
+      from:
+        - "@newsletter\\.store>$"
+        - "offers@ecommerce\\.com>$"
+        - "deals@shopping\\.site>$"
+      
+      title:
+        - "Weekly Deals"
+        - "Your Special Discount"
+        - "New Arrivals"
+        - "Black Friday Early Access"
+      
+      body:
+        - "check out our new collection"
+        - "use code SAVE20 for discount"
+        - "limited stock available"
+
+  - rule:
+      target_folder: "SOCIAL"
+      from:
+        - "notifications@social\\.network>$"
+        - "hello@professional\\.site>$"
+        - "connect@network\\.platform>$"
+      
+      title:
+        - "New connection request"
+        - "You have new notifications"
+        - "Someone viewed your profile"
+      
+      body:
+        - "wants to connect with you"
+        - "respond to your message"
+        - "you have new followers"
+
+  - rule:
+      target_folder: "IMPORTANT"
+      from:
+        - "support@bank\\.com>$"
+        - "no-reply@government\\.org>$"
+        - "alerts@security\\.service>$"
+      
+      title:
+        - "Important: Account Activity"
+        - "Security Alert"
+        - "Official Notification"
+      
+      body:
+        - "unusual login attempt detected"
+        - "please review your statement"
+        - "important tax information"

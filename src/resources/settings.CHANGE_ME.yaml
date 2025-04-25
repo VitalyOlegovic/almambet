@@ -3,8 +3,8 @@ imap:
   port: 993
   username: "user@example.com"
 
-# Spam filter settings
-spam_filter:
+# Massage filter settings
+mail_mover:
   check_interval: 60                # Check interval in seconds
 
 # REST API server configuration

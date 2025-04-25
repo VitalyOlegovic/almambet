@@ -68,7 +68,6 @@ async fn fetch_messages(
     Ok(successful_results)
 }
 
-// Move a message to the spam folder
 pub async fn move_message_by_message_id(
     session: &mut Session<Compat<tokio_native_tls::TlsStream<TcpStream>>>,
     message_id: &str,
@@ -92,9 +91,9 @@ pub async fn move_message_by_message_id(
     let uid = uid_result.into_iter().next()
         .ok_or_else(|| anyhow::anyhow!("No UID found"))?;
     
-    // Move the message to the spam folder using UID
+    // Move the message to the specified folder using UID
     session.uid_mv(uid.to_string(), target_mailbox).await?;
-    info!("Moved message {} to spam folder", message_id);
+    info!("Moved message {} to {} folder", message_id, target_mailbox);
     
     Ok(())
 }
@@ -107,9 +106,8 @@ pub async fn move_email_with_authentication(
 ) -> Result<(), Box<dyn StdError + Send + Sync>> {
     debug!("move_email_with_authentication message_id {} source {} target {}", message_id, source_mailbox, target_mailbox);
     
-    // Move message to spam
     if let Err(e) = move_message_by_message_id(imap_session, &message_id, source_mailbox, target_mailbox).await {
-        error!("Failed to move message to spam: {}", e);
+        error!("Failed to move message: {}", e);
         return Err(e.into());
     }
     

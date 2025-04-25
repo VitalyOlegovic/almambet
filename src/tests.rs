@@ -1,14 +1,14 @@
 #[cfg(test)]
 mod tests {
     
-    use crate::spam_filter::check_message_spam;
-    use crate::spam_filter::spam_filter_settings::SpamFilterSettings;
+    use crate::mail_move_rules::check_message_matches;
+    use crate::mail_move_rules::mail_move_settings::Rule;
     use crate::mail_reader::message::Message;
     
     #[test]
-    fn test_spam_filter_matches_domain() {
-        let settings = SpamFilterSettings {
-            from_regular_expressions: vec![r"nuovapromo\\.it$".to_string()],
+    fn test_mail_mover_matches_domain() {
+        let settings = Rule {
+            from: Some(vec![r"nuovapromo\\.it$".to_string()]),
             ..Default::default()
         };
         
@@ -17,13 +17,13 @@ mod tests {
             ..Default::default()
         };
         
-        assert!(check_message_spam(&spam_message, &settings));
+        assert!(check_message_matches(&spam_message, &settings));
     }
     
     #[test]
     fn test_spam_filter_ignores_good_email() {
-        let settings = SpamFilterSettings {
-            from_regular_expressions: vec![r"maildelgiorno\.it$".to_string()],
+        let settings = Rule {
+            from: Some(vec![r"maildelgiorno\.it$".to_string()]),
             ..Default::default()
         };
         
@@ -32,6 +32,6 @@ mod tests {
             ..Default::default()
         };
         
-        assert!(!check_message_spam(&good_message, &settings));
+        assert!(!check_message_matches(&good_message, &settings));
     }
 }
