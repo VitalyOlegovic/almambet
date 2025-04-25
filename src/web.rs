@@ -5,7 +5,6 @@ use crate::mail_reader::message::Message;
 use crate::mail_reader::imap::{fetch_messages_from_server, move_email_with_authentication, create_session};
 use crate::settings::Config;
 use log::{info, error};
-use urlencoding;
 use anyhow::Error;
 type AppError = Error;
 
@@ -48,7 +47,7 @@ async fn move_message(
     target_folder: String,
     config: &Config,
 ) -> Result<Redirect, AppError> {
-    let mut imap_session = create_session(&config).await?;
+    let mut imap_session = create_session(config).await?;
     let _ = move_email_with_authentication(&mut imap_session, message_id, "INBOX", &target_folder).await;
 
     Ok(Redirect::to("/"))
@@ -117,15 +116,15 @@ pub async fn entrypoint(config: &Config) -> Result<(), Box<dyn std::error::Error
         Ok(messages) => {
             if let Err(e) = start_web_server(messages, config).await {
                 error!("Error starting web server: {}", e);
-                return Err(e.into());
+                Err(e.into())
             }else{
                 info!("Web server started");
-                return Ok(());
+                Ok(())
             }
         }
         Err(e) => {
             error!("Error fetching messages: {}", e);
-            return Err(e);
+            Err(e)
         }
     }
 }

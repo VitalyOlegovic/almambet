@@ -5,7 +5,6 @@ mod mail_move_rules;
 mod settings;
 mod tests;
 use std::error::Error as StdError;
-use fern;
 
 fn setup_logger() -> Result<(), fern::InitError> {
     fern::Dispatch::new()

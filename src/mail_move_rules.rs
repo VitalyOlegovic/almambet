@@ -13,11 +13,11 @@ fn match_string(string: &str, pattern: &str) -> bool {
     let regex = Regex::new(pattern).unwrap();
     let result = regex.is_match(string);
     let sanitized_string = &string[..50.min(string.len())].replace(['\r', '\n'], "");
-    debug!("String {} pattern {} result {}", sanitized_string, pattern, result.to_string());
+    debug!("String {} pattern {} result {}", sanitized_string, pattern, result);
     result
 }
 
-fn match_many_strings(string: &str, patterns: &Vec<String>) -> bool {
+fn match_many_strings(string: &str, patterns: &[String]) -> bool {
     patterns.iter().any(|pattern| match_string(string, pattern))
 }
 
@@ -37,7 +37,7 @@ pub fn check_message_matches(message: &Message, rule: &Rule) -> bool {
     // Check "body" patterns if you have them
     let body_matches = match &rule.body{
         Some(patterns) => match_many_strings(
-            &message.content.clone().unwrap().as_ref(), 
+            message.content.clone().unwrap().as_ref(), 
             patterns
         ),
         None => false,
@@ -90,7 +90,7 @@ pub async fn entrypoint(config: &Config) -> Result<(), Box<dyn std::error::Error
     // Add a job that runs every N seconds
     sched.add(
         Job::new_repeated_async(
-            Duration::from_secs(config.mail_mover.interval_seconds.into()), 
+            Duration::from_secs(config.mail_mover.interval_seconds), 
             move |_uuid, _l| {
                 let second_config_clone = config_clone.clone();
                 Box::pin(async move {

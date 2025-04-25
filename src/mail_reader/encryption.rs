@@ -22,7 +22,7 @@ pub fn get_encryption_key() -> Result<Aes256Gcm> {
         // Generate new key
         let mut key_bytes = [0u8; 32];
         rand::thread_rng().fill_bytes(&mut key_bytes);
-        fs::write(key_path, &key_bytes)?;
+        fs::write(key_path, key_bytes)?;
         Aes256Gcm::new_from_slice(&key_bytes)
             .map_err(|e| anyhow::anyhow!("Failed to create cipher from new key: {}", e))?
     };
@@ -56,8 +56,8 @@ pub fn decrypt_password(encrypted: &str) -> Result<String> {
     let plaintext = cipher.decrypt(nonce, ciphertext)
         .map_err(|e| anyhow::anyhow!("Failed to decrypt password: {}", e))?;
     
-    Ok(String::from_utf8(plaintext)
-        .map_err(|e| anyhow::anyhow!("Failed to convert decrypted bytes to string: {}", e))?)
+    String::from_utf8(plaintext)
+        .map_err(|e| anyhow::anyhow!("Failed to convert decrypted bytes to string: {}", e))
 }
 
 pub fn get_credentials(login: &str) -> Result<(String, String)> {
