@@ -1,6 +1,6 @@
 use axum::{Router, routing::get};
 use crate::settings::Config;
-use crate::mail_reader::imap::{fetch_messages_from_server, create_session};
+use crate::mail_reader::imap::fetch_messages_from_server;
 use axum::{
     response::{IntoResponse, Response},
     Json,
@@ -30,10 +30,9 @@ impl IntoResponse for AppError {
     }
 }
 
-async fn get_data(config: Config) -> Result<Json<String>, AppError> {
-    let mut imap_session = create_session(&config).await.unwrap();
+async fn get_data(folder: String, config: Config) -> Result<Json<String>, AppError> {
 
-    let emails = fetch_messages_from_server(&mut imap_session, 10)
+    let emails = fetch_messages_from_server(&config, &folder, 10)
         .await
         .map_err(|e| AppError {
             message: e.to_string(),
@@ -44,9 +43,6 @@ async fn get_data(config: Config) -> Result<Json<String>, AppError> {
             message: e.to_string(),
         })?;
 
-    // Be nice to the server and log out
-    imap_session.logout().await.unwrap();
-
     Ok(Json(json))
 }
 
@@ -56,7 +52,7 @@ pub async fn entrypoint(config: &Config) -> Result<(), Box<dyn std::error::Error
     
     // Build our application with a route
     let app = Router::new()
-        .route("/api/v1/emails", get(move || get_data(settings_clone)));
+        .route("/api/v1/emails", get(move || get_data("MAILBOX".to_string(), settings_clone)));
 
     // Run our app with hyper
     let addr = format!(

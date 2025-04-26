@@ -2,7 +2,7 @@ use anyhow::{bail, Result};
 use mailparse::{parse_mail, MailHeaderMap};
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct Message {
     pub subject: String,
     pub from: String,
@@ -17,7 +17,7 @@ pub struct Message {
     pub attachments: Vec<Attachment>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Attachment {
     pub filename: String,
     pub content_type: String,
@@ -90,7 +90,7 @@ fn extract_text_content(parsed_mail: &mailparse::ParsedMail) -> Result<Option<St
     find_text_part(parsed_mail)
 }
 
-pub fn process_message(message: &async_imap::types::Fetch) -> Result<Message> {
+pub fn fetch_to_message(message: &async_imap::types::Fetch) -> Result<Message> {
     let body = message.body().expect("message did not have a body!");
     let parsed_mail = parse_mail(body)?;
     

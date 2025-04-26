@@ -4,7 +4,7 @@ use crate::mail_move_rules::mail_move_settings::*;
 use tokio::time::Duration;
 use crate::{mail_reader::message::Message, settings::Config};
 use crate::mail_move_rules::mail_move_settings::load_mail_move_config;
-use crate::mail_reader::imap::{move_email_with_authentication, fetch_messages_from_server, create_session};
+use crate::mail_reader::imap::{move_email_with_authentication, fetch_messages, create_session};
 use tokio_cron_scheduler::{Job, JobScheduler};
 use log::{debug,info,error};
 use regex::Regex;
@@ -51,7 +51,7 @@ async fn apply_rules(config: &Config) -> Result<(), Box<dyn std::error::Error>> 
     info!("Rule application running");
     let rules_config = load_mail_move_config().unwrap();
     let mut imap_session = create_session(config).await?;
-    let messages = fetch_messages_from_server(& mut imap_session, rules_config.messages_to_check).await.unwrap();
+    let messages = fetch_messages(& mut imap_session, "INBOX", rules_config.messages_to_check).await.unwrap();
     for message in &messages{
         for rule_wrapper in &rules_config.rules{
             if check_message_matches(message, &rule_wrapper.rule){

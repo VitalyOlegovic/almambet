@@ -9,6 +9,9 @@ use crate::mail_reader::message::Message;
 use crate::settings::Config;
 use crate::mail_reader::encryption;
 use log::{debug, info, error};
+use futures::StreamExt;  // For the stream's next() method
+
+use super::message::fetch_to_message;
 
 pub type ImapSession = Session<Compat<tokio_native_tls::TlsStream<tokio::net::TcpStream>>>;
 
@@ -45,7 +48,7 @@ fn calculate_message_range(total_messages: u32, count: u32) -> String {
 }
 
 // Fetch and process messages from the given mailbox
-async fn fetch_messages(
+pub async fn fetch_messages(
     session: &mut Session<Compat<tokio_native_tls::TlsStream<TcpStream>>>,
     mailbox: &str,
     count: u32
@@ -62,10 +65,43 @@ async fn fetch_messages(
     
     let successful_results: Vec<Message> = messages
         .iter()
-        .filter_map(|message| crate::mail_reader::message::process_message(message).ok())
+        .filter_map(|message| crate::mail_reader::message::fetch_to_message(message).ok())
         .collect();
     
     Ok(successful_results)
+}
+
+pub async fn find_message_by_id(
+    session: &mut Session<Compat<tokio_native_tls::TlsStream<TcpStream>>>,
+    message_id: &str,
+    source_mailbox: &str,
+) -> Result<Option<Message>> {
+    // First, select the source mailbox to ensure we're in the right folder
+    session.select(source_mailbox).await?;
+
+    // Search for the message by its Message-ID header
+    let messages = session.search(format!("HEADER Message-ID {}", message_id)).await?;
+
+    if messages.is_empty() {
+        return Ok(None);
+    }
+    
+    // Get the first message ID from the search results
+    let first_message_id = messages.iter().next().expect("Non-empty messages but couldn't get first").to_string();
+    
+    // Fetch the first matching message
+    let mut fetch_result = session.fetch(first_message_id, "RFC822").await?;
+    
+    // Extract the message body from the fetch result
+    let option_result_fetch = fetch_result.next().await;
+
+    match option_result_fetch {
+        Some(result_fetch) => match result_fetch{
+            Ok(fetch) => Ok(Some(fetch_to_message(&fetch).expect("Error"))),
+            Err(_) => Ok(None),
+        },
+        None => Ok(None),
+    }
 }
 
 pub async fn move_message_by_message_id(
@@ -129,14 +165,14 @@ pub async fn create_session(config: &Config) -> Result<ImapSession, Error>{
     Ok(imap_session)
 }
 
-pub async fn fetch_messages_from_server(imap_session: &mut ImapSession, count: u32) -> Result<Vec<Message>, Box<dyn std::error::Error>> {
+pub async fn fetch_messages_from_server(config: &Config, mailbox: &str, count: u32) -> Result<Vec<Message>, Box<dyn std::error::Error>> {
     
-    
+    let mut imap_session = create_session(config).await?;
     // Fetch messages
-    let messages = fetch_messages(imap_session, "INBOX", count).await?;
+    let messages = fetch_messages(&mut imap_session, mailbox, count).await?;
     
     // Be nice to the server and log out
-    //imap_session.logout().await?;
+    imap_session.logout().await?;
     
     Ok(messages)
 } 

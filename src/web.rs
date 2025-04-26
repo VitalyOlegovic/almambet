@@ -2,9 +2,9 @@ use axum::{response::Html, routing::get, Router, Extension, response::Redirect};
 use tera::Tera;
 use std::sync::Arc;
 use crate::mail_reader::message::Message;
-use crate::mail_reader::imap::{fetch_messages_from_server, move_email_with_authentication, create_session};
+use crate::mail_reader::imap::{create_session, fetch_messages_from_server, find_message_by_id, move_email_with_authentication};
 use crate::settings::Config;
-use log::{info, error};
+use log::info;
 use anyhow::Error;
 type AppError = Error;
 
@@ -28,16 +28,16 @@ async fn render_messages_page(
 }
 
 async fn render_email_detail(
+    config: &Config,
     message_id: String,
-    messages: Arc<Vec<Message>>,
+    folder_name: String,
     tera: Arc<Tera>,
 ) -> Result<Html<String>, AppError> {
-    let message = messages.iter()
-        .find(|m| m.message_id.as_ref() == Some(&message_id))
-        .ok_or_else(|| anyhow::anyhow!("Message not found"))?;
+    let mut imap_session = create_session(config).await?;
+    let message = find_message_by_id(&mut imap_session, &message_id, &folder_name).await?.expect("Error");
     
     let mut ctx = tera::Context::new();
-    ctx.insert("message", message);
+    ctx.insert("message", &message);
     let html = tera.render("email_detail.html", &ctx)?;
     Ok(Html(html))
 }
@@ -60,27 +60,32 @@ async fn start_server(router: Router) -> Result<(), AppError> {
     Ok(())
 }
 
-fn create_router(
-    messages: Arc<Vec<Message>>,
+async fn create_router(
     tera: Arc<Tera>,
     config: &Config,
 ) -> Router {
-    let messages_for_list = messages.clone();
     let tera_for_list = tera.clone();
-    let messages_for_detail = messages.clone();
     let tera_for_detail = tera.clone();
     let tera_for_error = tera.clone();
     let settings_for_move_message = config.clone();
+    let settings_for_spam = config.clone();
+    let config_for_detail = config.clone();
+
+    // TODO use the IMAP session holder here
     
     Router::new()
-        .route("/", get(move || async move {
-            match render_messages_page(messages_for_list.clone(), tera_for_list.clone()).await {
+        .route("/", get(|| async { Redirect::permanent("/inbox/INBOX") }))
+        .route("/inbox/:folder_name", get(move |axum::extract::Path(folder_name): axum::extract::Path<String>| async move {
+            let messages = fetch_messages_from_server(&settings_for_spam.clone(), &folder_name, 10)
+                .await
+                .expect("Cannot fetch messages");
+            match render_messages_page(Arc::new(messages.clone()), tera_for_list.clone()).await {
                 Ok(html) => html,
                 Err(e) => render_error(tera_for_list.clone(), format!("Error loading messages: {}", e)).await
             }
         }))
-        .route("/email/:message_id", get(move |axum::extract::Path(message_id)| async move {
-            match render_email_detail(message_id, messages_for_detail.clone(), tera_for_detail.clone()).await {
+        .route("/email/:folder_name/:message_id", get(move |axum::extract::Path((folder_name, message_id))| async move {
+            match render_email_detail(&config_for_detail.clone(), message_id, folder_name, tera_for_detail.clone()).await {
                 Ok(html) => html,
                 Err(e) => render_error(tera_for_detail.clone(), format!("Error loading email: {}", e)).await
             }
@@ -100,31 +105,13 @@ fn create_router(
         .layer(Extension(tera.clone()))
 }
 
-pub async fn start_web_server(messages: Vec<Message>, config: &Config) -> Result<(), AppError> {
+pub async fn start_web_server(config: &Config) -> Result<(), AppError> {
     let tera = Arc::new(Tera::new("templates/**/*.html")?);
-    let messages = Arc::new(messages);
     
-    let router = create_router(Arc::clone(&messages), Arc::clone(&tera), config);
+    let router = create_router(Arc::clone(&tera), config).await;
     start_server(router).await
 }
 
 pub async fn entrypoint(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
-    let mut imap_session = create_session(config).await?;
-
-    let result = fetch_messages_from_server(&mut imap_session, 10).await;
-    match result {
-        Ok(messages) => {
-            if let Err(e) = start_web_server(messages, config).await {
-                error!("Error starting web server: {}", e);
-                Err(e.into())
-            }else{
-                info!("Web server started");
-                Ok(())
-            }
-        }
-        Err(e) => {
-            error!("Error fetching messages: {}", e);
-            Err(e)
-        }
-    }
+    start_web_server(config).await.map_err(Into::into)
 }
