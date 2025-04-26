@@ -3,7 +3,8 @@ use async_imap::{Client, Session};
 use futures::TryStreamExt;
 use tokio::net::TcpStream;
 use tokio_util::compat::{Compat, TokioAsyncReadCompatExt};
-use std::error::Error as StdError;
+use std::{cmp::Ordering, error::Error as StdError};
+use chrono::{DateTime, FixedOffset};
 
 use crate::mail_reader::message::Message;
 use crate::settings::Config;
@@ -47,6 +48,20 @@ fn calculate_message_range(total_messages: u32, count: u32) -> String {
     format!("{}:{}", start, total_messages)
 }
 
+pub fn sort_messages_by_date_desc(messages: &mut Vec<Message>) {
+    messages.sort_by(|a, b| {
+        let a_date = DateTime::parse_from_rfc2822(&a.date).ok();
+        let b_date = DateTime::parse_from_rfc2822(&b.date).ok();
+
+        match (a_date, b_date) {
+            (Some(a_dt), Some(b_dt)) => b_dt.cmp(&a_dt), // Descending order (newest first)
+            (Some(_), None) => Ordering::Less, // Parsed dates come before unparsed
+            (None, Some(_)) => Ordering::Greater,
+            (None, None) => b.date.cmp(&a.date), // Fallback: String comparison (lexicographical)
+        }
+    });
+}
+
 // Fetch and process messages from the given mailbox
 pub async fn fetch_messages(
     session: &mut Session<Compat<tokio_native_tls::TlsStream<TcpStream>>>,
@@ -63,10 +78,13 @@ pub async fn fetch_messages(
     let messages_stream = session.fetch(&range, "(RFC822 BODY.PEEK[])").await?;
     let messages: Vec<_> = messages_stream.try_collect().await?;
     
-    let successful_results: Vec<Message> = messages
+    let mut successful_results: Vec<Message> = messages
         .iter()
         .filter_map(|message| crate::mail_reader::message::fetch_to_message(message).ok())
         .collect();
+
+    // Sort by date descending
+    sort_messages_by_date_desc(&mut successful_results);
     
     Ok(successful_results)
 }
