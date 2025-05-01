@@ -12,7 +12,11 @@ use regex::Regex;
 fn match_string(string: &str, pattern: &str) -> bool {
     let regex = Regex::new(pattern).unwrap();
     let result = regex.is_match(string);
-    let sanitized_string = &string[..50.min(string.len())].replace(['\r', '\n'], "");
+    let sanitized_string: String = string
+    .chars()          // Iterate over characters (not bytes)
+    .take(50)         // Take first 50 characters
+    .filter(|c| *c != '\r' && *c != '\n')  // Filter out newlines
+    .collect();       // Collect into a String
     debug!("String {} pattern {} result {}", sanitized_string, pattern, result);
     result
 }

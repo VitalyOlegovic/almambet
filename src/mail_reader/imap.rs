@@ -4,7 +4,7 @@ use futures::TryStreamExt;
 use tokio::net::TcpStream;
 use tokio_util::compat::{Compat, TokioAsyncReadCompatExt};
 use std::{cmp::Ordering, error::Error as StdError};
-use chrono::{DateTime, FixedOffset};
+use chrono::DateTime;
 
 use crate::mail_reader::message::Message;
 use crate::settings::Config;
@@ -194,3 +194,23 @@ pub async fn fetch_messages_from_server(config: &Config, mailbox: &str, count: u
     
     Ok(messages)
 } 
+
+pub async fn list_imap_folders(
+    config: &Config
+) -> Result<Vec<String>, Error> {
+
+    let mut imap_session = create_session(config).await?;
+
+    let folders = imap_session
+        .list(Some(""), Some("*"))
+        .await?
+        // First convert Result to Option with ok()
+        .map_ok(|name|name.name().to_string())
+        .try_collect::<Vec<String>>()
+        .await?;
+
+    // Be nice to the server and log out
+    imap_session.logout().await?;
+
+    Ok(folders)
+}

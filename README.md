@@ -65,7 +65,7 @@ It is also required an `email_move_rules.yaml` file like this:
 messages_to_check: 1500
 rules:
   - rule:
-      target_folder: "SPAM"
+      target_folder: "Spam"
       from:
         - "@phishing\\.net>$"
         - "@scam\\.xyz>$"

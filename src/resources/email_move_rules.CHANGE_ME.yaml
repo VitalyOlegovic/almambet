@@ -1,7 +1,7 @@
 messages_to_check: 1500
 rules:
   - rule:
-      target_folder: "SPAM"
+      target_folder: "Spam"
       from:
         - "@phishing\\.net>$"
         - "@scam\\.xyz>$"

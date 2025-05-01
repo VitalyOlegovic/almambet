@@ -2,7 +2,7 @@ use axum::{response::Html, routing::get, Router, Extension, response::Redirect};
 use tera::Tera;
 use std::sync::Arc;
 use crate::mail_reader::message::Message;
-use crate::mail_reader::imap::{create_session, fetch_messages_from_server, find_message_by_id, move_email_with_authentication};
+use crate::mail_reader::imap::{create_session, fetch_messages_from_server, find_message_by_id, move_email_with_authentication, list_imap_folders};
 use crate::settings::Config;
 use log::info;
 use anyhow::Error;
@@ -18,11 +18,15 @@ async fn render_error(tera: Arc<Tera>, error_message: String) -> Html<String> {
 }
 
 async fn render_messages_page(
+    folder_name: Arc<String>,
     messages: Arc<Vec<Message>>,
+    folders: Arc<Vec<String>>,
     tera: Arc<Tera>,
 ) -> Result<Html<String>, AppError> {
     let mut ctx = tera::Context::new();
+    ctx.insert("folder_name", &*folder_name);
     ctx.insert("messages", &*messages);
+    ctx.insert("folders", &*folders);
     let html = tera.render("emails.html", &ctx)?;
     Ok(Html(html))
 }
@@ -79,7 +83,12 @@ async fn create_router(
             let messages = fetch_messages_from_server(&settings_for_spam.clone(), &folder_name, 10)
                 .await
                 .expect("Cannot fetch messages");
-            match render_messages_page(Arc::new(messages.clone()), tera_for_list.clone()).await {
+            let folders = list_imap_folders(&settings_for_spam.clone()).await.expect("Cannot fetch folders");
+            match render_messages_page(
+                Arc::new(folder_name),
+                Arc::new(messages.clone()), 
+                Arc::new(folders.clone()
+            ), tera_for_list.clone()).await {
                 Ok(html) => html,
                 Err(e) => render_error(tera_for_list.clone(), format!("Error loading messages: {}", e)).await
             }

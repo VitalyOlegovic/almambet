@@ -1,41 +1,56 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Email Messages</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
 </head>
+
 <body class="has-background-light">
-    <div class="container p-5">
-        <h1 class="title mb-5">Email Messages</h1>
-        {% for message in messages %}
-        <div class="box mb-4">
-            <div class="pb-4 mb-4 has-border-bottom">
-                <div class="title is-5 mb-2">
-                    <a href="/email/{{ message.message_id }}" class="has-text-dark">{{ message.subject }}</a>
-                </div>
-                <div class="subtitle is-6 has-text-grey mt-2">
-                    <span class="mr-4">From: {{ message.from }}</span>
-                    <span class="mr-4">Date: {{ message.date }}</span>
-                    {% if message.to %}
-                    <span class="mr-4">To: {{ message.to }}</span>
-                    {% endif %}
-                    {% if message.cc %}
-                    <span class="mr-4">CC: {{ message.cc }}</span>
-                    {% endif %}
-                </div>
-            </div>
-            {% if message.content %}
-            <div class="content">
-                {{ message.content }}
-            </div>
-            {% endif %}
-            {% if message.message_id %}
-            <div class="is-size-7 has-text-grey mt-4">
-                Message ID: {{ message.message_id }}
-            </div>
-            {% endif %}
+    <div class="columns">
+        <div class="column container is-3 py-5 px-5">
+            <aside class="menu">
+                <ul class="menu-list">
+                    {% for folder in folders %}
+                    <li><a href="{{folder}}">{{ folder }}</a></li>
+                    {% endfor %}
+                    <li><a>Customers</a></li>
+                </ul>
+            </aside>
         </div>
-        {% endfor %}
+        <div class="column container p-5">
+            <h1 class="title mb-5">Email Messages</h1>
+            {% for message in messages %}
+            <div class="box mb-4">
+                <div class="pb-4 mb-4 has-border-bottom">
+                    <div class="title is-5 mb-2">
+                        <a href="/email/{{folder_name}}/{{ message.message_id }}" class="has-text-dark">{{ message.subject }}</a>
+                    </div>
+                    <div class="subtitle is-6 has-text-grey mt-2">
+                        <span class="mr-4">From: {{ message.from }}</span>
+                        <span class="mr-4">Date: {{ message.date }}</span>
+                        {% if message.to %}
+                        <span class="mr-4">To: {{ message.to }}</span>
+                        {% endif %}
+                        {% if message.cc %}
+                        <span class="mr-4">CC: {{ message.cc }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if message.content %}
+                <div class="content">
+                    {{ message.content }}
+                </div>
+                {% endif %}
+                {% if message.message_id %}
+                <div class="is-size-7 has-text-grey mt-4">
+                    Message ID: {{ message.message_id }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
     </div>
 </body>
+
 </html>
