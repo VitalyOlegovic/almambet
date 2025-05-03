@@ -1,7 +1,6 @@
 # Almambet - Email Reader
 
-A secure and efficient email reader application built with Rust, featuring IMAP support and a web interface.
-
+Email reader application built with Rust, featuring IMAP support, a web interface and a REST one.
 
 ## About the Name
 
@@ -9,7 +8,7 @@ The name "Almambet" is inspired by a significant character from the Kyrgyz epic 
 
 ## Configuration
 
-The application requires the following configuration files:
+The application will generate the following encrypted files and use them as a cache of your password:
 
 - `.encrypted_password`: Encrypted email password
 - `.encryption_key`: Encryption key for credentials
@@ -27,18 +26,29 @@ The application requires the following configuration files:
    cargo build --release
    ```
 
-3. Run the application:
-   ```bash
-   cargo run --release
-   ```
+3. Modify the configuration files inside the `resources` folder.
+
+3. Run the program.
+
+    * Run the spam filter once and exit:
+      ```bash
+      cargo run -- --once
+      ```
+
+    * Run the web interface and spam filter at the interval specified in the configuration files:
+      ```bash
+      cargo run -- --periodic --web
+      ```    
+
+    * Run the REST interface and spam filter at the interval specified in the configuration files:
+      ```bash
+      cargo run -- --periodic --rest
+      ```
 
 The web interface will be available at `http://localhost:3000`.
 
-## Security
+The REST interface will be available at `http://localhost:3000/api/v1/emails`.
 
-- Email credentials are stored in encrypted form
-- Uses secure TLS connections for IMAP
-- Implements proper error handling and logging
 
 ## Configuration
 

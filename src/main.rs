@@ -6,6 +6,9 @@ mod settings;
 mod tests;
 use std::error::Error as StdError;
 
+use clap::{Arg, ArgAction, Command};
+use mail_move_rules::apply_rules;
+
 fn setup_logger() -> Result<(), fern::InitError> {
     fern::Dispatch::new()
         .format(|out, message, record| {
@@ -24,14 +27,70 @@ fn setup_logger() -> Result<(), fern::InitError> {
     Ok(())
 }
 
+fn cli() -> Command {
+    Command::new("Email Rules Processor")
+        .version("1.0")
+        .about("Applies movement rules to email messages")
+        .arg(
+            Arg::new("once")
+                .short('o')
+                .long("once")
+                .action(ArgAction::SetTrue)
+                .help("Apply movement rules once and exit"),
+        )
+        .arg(
+            Arg::new("periodic")
+                .short('p')
+                .long("periodic")
+                .action(ArgAction::SetTrue)
+                .help("Apply movement rules periodically"),
+        )
+        .arg(
+            Arg::new("web")
+                .short('w')
+                .long("web")
+                .action(ArgAction::SetTrue)
+                .help("Run as a web application"),
+        )
+        .arg(
+            Arg::new("rest")
+                .short('r')
+                .long("rest")
+                .action(ArgAction::SetTrue)
+                .help("Run a REST API endpoint"),
+        )
+}
+
+
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn StdError>> {
     setup_logger().expect("Failed to initialize logger");
 
     let config = settings::load_settings().unwrap();
+
+    let matches = cli().get_matches();
     
-    let _ = mail_move_rules::entrypoint(&config).await; 
-    let _ = web::entrypoint(&config).await; // TODO: Remove
-    let _ = web_services::entrypoint(&config).await;
+    let once = matches.get_flag("once");
+    let periodic = matches.get_flag("periodic");
+    let web = matches.get_flag("web");
+    let rest = matches.get_flag("rest");
+    
+    if once{
+        let _ = apply_rules(&config).await;
+    }
+
+    if periodic{
+        let _ = mail_move_rules::entrypoint(&config).await; 
+    }
+
+    if web{
+        let _ = web::entrypoint(&config).await; // TODO: Remove
+    }
+
+    if rest{
+        let _ = web_services::entrypoint(&config).await;
+    }
+
     Ok(())
 }

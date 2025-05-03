@@ -52,7 +52,7 @@ pub async fn entrypoint(config: &Config) -> Result<(), Box<dyn std::error::Error
     
     // Build our application with a route
     let app = Router::new()
-        .route("/api/v1/emails", get(move || get_data("MAILBOX".to_string(), settings_clone)));
+        .route("/api/v1/emails", get(move || get_data("INBOX".to_string(), settings_clone)));
 
     // Run our app with hyper
     let addr = format!(

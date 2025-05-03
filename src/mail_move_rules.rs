@@ -51,7 +51,7 @@ pub fn check_message_matches(message: &Message, rule: &Rule) -> bool {
     from_matches || title_matches || body_matches
 }
 
-async fn apply_rules(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn apply_rules(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
     info!("Rule application running");
     let rules_config = load_mail_move_config().unwrap();
     let mut imap_session = create_session(config).await?;
