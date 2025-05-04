@@ -8,6 +8,7 @@ use crate::mail_reader::imap::{move_email_with_authentication, fetch_messages, c
 use tokio_cron_scheduler::{Job, JobScheduler};
 use log::{debug,info,error};
 use regex::Regex;
+use itertools::Itertools;
 
 fn match_string(string: &str, pattern: &str) -> bool {
     let regex = Regex::new(pattern).unwrap();
@@ -53,35 +54,41 @@ pub fn check_message_matches(message: &Message, rule: &Rule) -> bool {
 
 pub async fn apply_rules(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
     info!("Rule application running");
-    let rules_config = load_mail_move_config().unwrap();
+    let rules_config = load_mail_move_config()?;
     let mut imap_session = create_session(config).await?;
-    let messages = fetch_messages(& mut imap_session, "INBOX", rules_config.messages_to_check).await.unwrap();
-    for message in &messages{
-        for rule_wrapper in &rules_config.rules{
-            if check_message_matches(message, &rule_wrapper.rule){
-                info!("The message {} is matching, trying to move it", message.subject);
-                match &message.message_id {
-                    Some(id) => {
-                        info!("The matching message id is {}", id);
-                        let _ = move_email_with_authentication(
-                            &mut imap_session, 
-                            id.to_string(), 
-                            "INBOX", 
-                            &rule_wrapper.rule.target_folder
-                        ).await;
-                    }
-                    None => {
-                        error!("Cannot move message to another folder.")
-                    },
-                } 
-                
-            }
+    
+    let messages = fetch_messages(
+        &mut imap_session, 
+        "INBOX", 
+        rules_config.messages_to_check
+    ).await?;
+
+    let matching_messages_and_rules: Vec<_> = messages
+        .iter()
+        .cartesian_product(&rules_config.rules)
+        .filter(|(message, rule_wrapper)| check_message_matches(message, &rule_wrapper.rule))
+        .collect();
+
+    for (message, rule_wrapper) in matching_messages_and_rules {
+        info!("The message {:?} is matching, trying to move it", message.subject);
+        
+        let Some(id) = &message.message_id else {
+            error!("Cannot move message to another folder: missing message ID");
+            continue;
+        };
+    
+        info!("The matching message id is {}", id);
+        if let Err(e) = move_email_with_authentication(
+            &mut imap_session, 
+            id.to_string(), 
+            "INBOX", 
+            &rule_wrapper.rule.target_folder
+        ).await {
+            error!("Failed to move message: {}", e);
         }
     }
 
-    // Be nice to the server and log out
     imap_session.logout().await?;
-
     Ok(())
 }
 

@@ -34,17 +34,17 @@ fn extract_attachments(parsed_mail: &mailparse::ParsedMail) -> Result<Vec<Attach
         
         let content_disposition = part.headers.get_first_value("Content-Disposition")
             .unwrap_or_default();
-
+    
         // Check if this is an attachment
         if content_disposition.to_lowercase().contains("attachment") {
             let filename = part.headers.get_first_value("Content-Disposition")
                 .and_then(|disp| {
                     disp.split("filename=")
                         .nth(1)
-                        .map(|f| f.trim_matches('"').to_string())
+                        .map(|f| f.trim_matches('"').to_string()) // Ensure ownership here
                 })
                 .unwrap_or_else(|| "unnamed_attachment".to_string());
-
+    
             let content = part.get_body_raw()?;
             
             attachments.push(Attachment {
@@ -54,12 +54,12 @@ fn extract_attachments(parsed_mail: &mailparse::ParsedMail) -> Result<Vec<Attach
                 content,
             });
         }
-
+    
         // Recursively process subparts
         for subpart in &part.subparts {
             process_part(subpart, attachments)?;
         }
-
+    
         Ok(())
     }
 
