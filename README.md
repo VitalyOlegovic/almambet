@@ -35,6 +35,11 @@ The application will generate the following encrypted files and use them as a ca
       cargo run -- --once
       ```
 
+    * Delete spam messages and exit:
+      ```bash
+      cargo run -- --spam
+      ```
+
     * Run the web interface and spam filter at the interval specified in the configuration files:
       ```bash
       cargo run -- --periodic --web
