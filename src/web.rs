@@ -74,8 +74,6 @@ async fn create_router(
     let settings_for_move_message = config.clone();
     let settings_for_spam = config.clone();
     let config_for_detail = config.clone();
-
-    // TODO use the IMAP session holder here
     
     Router::new()
         .route("/", get(|| async { Redirect::permanent("/inbox/INBOX") }))

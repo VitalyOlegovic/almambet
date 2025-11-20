@@ -4,7 +4,7 @@ use crate::mail_move_rules::mail_move_settings::*;
 use tokio::time::Duration;
 use crate::{mail_reader::message::Message, settings::Config};
 use crate::mail_move_rules::mail_move_settings::load_mail_move_config;
-use crate::mail_reader::imap::{move_email_with_authentication, fetch_messages, create_session};
+use crate::mail_reader::imap::{create_session, delete_email_with_authentication, fetch_messages, move_email_with_authentication};
 use tokio_cron_scheduler::{Job, JobScheduler};
 use log::{debug,info,error};
 use regex::Regex;
@@ -83,6 +83,39 @@ pub async fn apply_rules(config: &Config) -> Result<(), Box<dyn std::error::Erro
             id.to_string(), 
             "INBOX", 
             &rule_wrapper.rule.target_folder
+        ).await {
+            error!("Failed to move message: {}", e);
+        }
+    }
+
+    imap_session.logout().await?;
+    Ok(())
+}
+
+pub async fn delete_spam(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
+    info!("Deleting spam");
+    let rules_config = load_mail_move_config()?;
+    let mut imap_session = create_session(config).await?;
+    
+    let messages = fetch_messages(
+        &mut imap_session, 
+        "Spam", 
+        rules_config.messages_to_check
+    ).await?;
+
+    for message in messages {
+        info!("The message {:?} is spam, trying to delete it", message.subject);
+        
+        let Some(id) = &message.message_id else {
+            error!("Cannot move message to another folder: missing message ID");
+            continue;
+        };
+    
+        info!("The matching message id is {}", id);
+        if let Err(e) = delete_email_with_authentication(
+            &mut imap_session, 
+            id.to_string(), 
+            "Spam"
         ).await {
             error!("Failed to move message: {}", e);
         }

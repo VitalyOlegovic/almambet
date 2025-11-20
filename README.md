@@ -47,7 +47,7 @@ The application will generate the following encrypted files and use them as a ca
 
 The web interface will be available at `http://localhost:3000`.
 
-The REST interface will be available at `http://localhost:3000/api/v1/emails`.
+The REST interface will be available, for example, at `http://localhost:3000/api/v1/emails/INBOX` for the INBOX folder.
 
 
 ## Configuration

@@ -4,6 +4,8 @@ use crate::mail_reader::imap::fetch_messages_from_server;
 use axum::{
     response::{IntoResponse, Response},
     Json,
+    extract::Path,
+    http::StatusCode,
 };
 use std::fmt;
 
@@ -46,13 +48,18 @@ async fn get_data(folder: String, config: Config) -> Result<Json<String>, AppErr
     Ok(Json(json))
 }
 
+async fn not_found() -> impl IntoResponse {
+    (StatusCode::NOT_FOUND, "404 - Page Not Found")
+}
+
 pub async fn entrypoint(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
     // Clone settings once at the start instead of multiple times
     let settings_clone = config.clone();
     
     // Build our application with a route
     let app = Router::new()
-        .route("/api/v1/emails", get(move || get_data("INBOX".to_string(), settings_clone)));
+        .route("/api/v1/emails/:folder", get(move |Path(folder): Path<String>| get_data(folder, settings_clone)))
+        .fallback(not_found);
 
     // Run our app with hyper
     let addr = format!(

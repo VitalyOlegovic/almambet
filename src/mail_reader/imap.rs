@@ -152,6 +152,47 @@ pub async fn move_message_by_message_id(
     Ok(())
 }
 
+
+pub async fn delete_message_by_message_id(
+    session: &mut Session<Compat<tokio_native_tls::TlsStream<TcpStream>>>,
+    message_id: &str,
+    mailbox: &str,
+) -> Result<()> {
+    debug!("delete_message_by_message_id message_id {} mailbox {}", message_id, mailbox);
+
+    // Select the mailbox to ensure we're in the right folder
+    session.select(mailbox).await?;
+    
+    // Search for the message by its Message-ID header using UID search
+    let uid_result = session.uid_search(format!("HEADER Message-ID {}", message_id)).await?;
+    
+    if uid_result.is_empty() {
+        return Err(anyhow::anyhow!("Message with Message-ID '{}' not found in mailbox '{}'", message_id, mailbox));
+    }
+    
+    // Get the UID of the message
+    let uid = uid_result.into_iter().next()
+        .ok_or_else(|| anyhow::anyhow!("No UID found for message with Message-ID '{}'", message_id))?;
+    
+    // Mark the message for deletion using UID store and consume the stream
+    session
+        .uid_store(uid.to_string(), "+FLAGS (\\Deleted)")
+        .await?
+        .try_collect::<Vec<_>>()
+        .await?;
+    
+    // Permanently remove the message by expunging the mailbox and consume the stream
+    session
+        .expunge()
+        .await?
+        .try_collect::<Vec<_>>()
+        .await?;
+    
+    info!("Deleted message {} from mailbox {}", message_id, mailbox);
+    
+    Ok(())
+}
+
 pub async fn move_email_with_authentication(
     imap_session: &mut ImapSession,
     message_id: String, 
@@ -161,6 +202,21 @@ pub async fn move_email_with_authentication(
     debug!("move_email_with_authentication message_id {} source {} target {}", message_id, source_mailbox, target_mailbox);
     
     if let Err(e) = move_message_by_message_id(imap_session, &message_id, source_mailbox, target_mailbox).await {
+        error!("Failed to move message: {}", e);
+        return Err(e.into());
+    }
+    
+    Ok(())
+}
+
+pub async fn delete_email_with_authentication(
+    imap_session: &mut ImapSession,
+    message_id: String, 
+    source_mailbox: &str
+) -> Result<(), Box<dyn StdError + Send + Sync>> {
+    debug!("delete_message_by_message_id message_id {} source {}", message_id, source_mailbox);
+    
+    if let Err(e) = delete_message_by_message_id(imap_session, &message_id, source_mailbox).await {
         error!("Failed to move message: {}", e);
         return Err(e.into());
     }

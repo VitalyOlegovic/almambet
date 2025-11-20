@@ -7,7 +7,6 @@ mod tests;
 use std::error::Error as StdError;
 
 use clap::{Arg, ArgAction, Command};
-use mail_move_rules::apply_rules;
 
 fn setup_logger() -> Result<(), fern::InitError> {
     fern::Dispatch::new()
@@ -59,6 +58,13 @@ fn cli() -> Command {
                 .action(ArgAction::SetTrue)
                 .help("Run a REST API endpoint"),
         )
+        .arg(
+            Arg::new("spam")
+                .short('s')
+                .long("spam")
+                .action(ArgAction::SetTrue)
+                .help("Deletes spam messages"),
+        )
 }
 
 
@@ -75,9 +81,10 @@ async fn main() -> Result<(), Box<dyn StdError>> {
     let periodic = matches.get_flag("periodic");
     let web = matches.get_flag("web");
     let rest = matches.get_flag("rest");
+    let spam = matches.get_flag("spam");
     
     if once{
-        let _ = apply_rules(&config).await;
+        let _ = mail_move_rules::apply_rules(&config).await;
     }
 
     if periodic{
@@ -85,11 +92,15 @@ async fn main() -> Result<(), Box<dyn StdError>> {
     }
 
     if web{
-        let _ = web::entrypoint(&config).await; // TODO: Remove
+        let _ = web::entrypoint(&config).await;
     }
 
     if rest{
         let _ = web_services::entrypoint(&config).await;
+    }
+
+    if spam{
+        let _ = mail_move_rules::delete_spam(&config).await;
     }
 
     Ok(())
