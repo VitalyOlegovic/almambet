@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 use std::fs::File;
 use std::io::BufReader;
-use serde_yaml::Error;
+use serde_yaml_bw::Error;
 use backtrace::Backtrace;
 use log::error;
 
@@ -53,7 +53,7 @@ pub fn load_settings() -> Result<Config, Error> {
     let reader = BufReader::new(file);
 
     // Parse the YAML file into the Settings struct
-    let config_result= serde_yaml::from_reader(reader);
+    let config_result= serde_yaml_bw::from_reader(reader);
     let config: Config = match config_result {
         Ok(config) => config,
         Err(err) => {

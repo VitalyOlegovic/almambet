@@ -21,7 +21,7 @@ pub fn get_encryption_key() -> Result<Aes256Gcm> {
     } else {
         // Generate new key
         let mut key_bytes = [0u8; 32];
-        rand::thread_rng().fill_bytes(&mut key_bytes);
+        rand::rng().fill_bytes(&mut key_bytes);
         fs::write(key_path, key_bytes)?;
         Aes256Gcm::new_from_slice(&key_bytes)
             .map_err(|e| anyhow::anyhow!("Failed to create cipher from new key: {}", e))?
@@ -32,7 +32,7 @@ pub fn get_encryption_key() -> Result<Aes256Gcm> {
 pub fn encrypt_password(password: &str) -> Result<String> {
     let cipher = get_encryption_key()?;
     let mut nonce_bytes = [0u8; 12];
-    rand::thread_rng().fill_bytes(&mut nonce_bytes);
+    rand::rng().fill_bytes(&mut nonce_bytes);
     let nonce = Nonce::from_slice(&nonce_bytes);
     
     let ciphertext = cipher.encrypt(nonce, password.as_bytes())

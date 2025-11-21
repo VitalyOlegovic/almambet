@@ -2,7 +2,7 @@ use serde::{Deserialize,Serialize};
 
 use std::fs::File;
 use std::io::BufReader;
-use serde_yaml::Error;
+use serde_yaml_bw::Error;
 use backtrace::Backtrace;
 use log::error;
 
@@ -42,7 +42,7 @@ pub fn load_mail_move_config() -> Result<RulesConfig, Error> {
     let reader = BufReader::new(file);
 
     // Parse the YAML file into the Settings struct
-    let parsing_result= serde_yaml::from_reader(reader);
+    let parsing_result= serde_yaml_bw::from_reader(reader);
     let rules_config: RulesConfig = match parsing_result {
         Ok(settings) => settings,
         Err(err) => {

@@ -1,4 +1,4 @@
-# Almambet - Email Reader
+# Almambet - email reader and spam filter
 
 Email reader application built with Rust, featuring IMAP support, a web interface and a REST one.
 
