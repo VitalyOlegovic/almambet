@@ -91,7 +91,7 @@ fn extract_text_content(parsed_mail: &mailparse::ParsedMail) -> Result<Option<St
 }
 
 pub fn fetch_to_message(message: &async_imap::types::Fetch) -> Result<Message> {
-    let body = message.body().expect("message did not have a body!");
+    let body = message.body().unwrap_or(&[]);
     let parsed_mail = parse_mail(body)?;
     
     let subject = parsed_mail.headers.get_first_value("Subject");

@@ -10,15 +10,27 @@ use log::{debug,info,error};
 use regex::Regex;
 use itertools::Itertools;
 
+fn sanitize_for_display(s: &str, max_chars: usize) -> String {
+    s.chars()
+        .take(max_chars)
+        .filter(|c| !c.is_control() || *c == '\t')
+        .map(|c| if c.is_whitespace() && c != ' ' { ' ' } else { c })
+        .collect()
+}
+
 fn match_string(string: &str, pattern: &str) -> bool {
-    let regex = Regex::new(pattern).unwrap();
-    let result = regex.is_match(string);
-    let sanitized_string: String = string
-    .chars()          // Iterate over characters (not bytes)
-    .take(50)         // Take first 50 characters
-    .filter(|c| *c != '\r' && *c != '\n')  // Filter out newlines
-    .collect();       // Collect into a String
-    debug!("String {} pattern {} result {}", sanitized_string, pattern, result);
+    // Compute result first (main logic)
+    let result = Regex::new(pattern)
+        .map(|regex| regex.is_match(string))
+        .unwrap_or(false);
+    
+    // Logging with sanitization
+    if log::log_enabled!(log::Level::Debug) {
+        let sanitized = sanitize_for_display(string, 50);
+        debug!("match_string: input='{}' pattern='{}' result={}", 
+               sanitized, pattern, result);
+    }
+    
     result
 }
 
