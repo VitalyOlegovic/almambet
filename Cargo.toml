@@ -17,7 +17,7 @@ rpassword = "7.4.0"
 tokio = { version = "1.49.0", features = ["full"] }
 tokio-util = { version = "0.7.18", features = ["compat"] }
 tokio-native-tls = "0.3.1"
-serde_yaml_bw = "2.5.2"
+yaml_serde = "0.10"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 backtrace = "0.3.76"
