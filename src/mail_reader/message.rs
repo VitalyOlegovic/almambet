@@ -15,6 +15,7 @@ pub struct Message {
     pub content_type: Option<String>,
     pub content: Option<String>,
     pub attachments: Vec<Attachment>,
+    pub user_agent: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -103,6 +104,8 @@ pub fn fetch_to_message(message: &async_imap::types::Fetch) -> Result<Message> {
     let reply_to = parsed_mail.headers.get_first_value("Reply-To");
     let message_id = parsed_mail.headers.get_first_value("Message-ID");
     let content_type = parsed_mail.headers.get_first_value("Content-Type");
+    let user_agent = parsed_mail.headers.get_first_value("User-Agent")
+    .or_else(|| parsed_mail.headers.get_first_value("X-Mailer"));
 
     // Extract text content and attachments
     let content = extract_text_content(&parsed_mail)?;
@@ -121,6 +124,7 @@ pub fn fetch_to_message(message: &async_imap::types::Fetch) -> Result<Message> {
             content_type,
             content,
             attachments,
+            user_agent,
         }),
         _ => bail!("Cannot parse the message"),
     }

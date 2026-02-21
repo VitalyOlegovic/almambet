@@ -27,8 +27,10 @@ fn match_string(string: &str, pattern: &str) -> bool {
     // Logging with sanitization
     if log::log_enabled!(log::Level::Debug) {
         let sanitized = sanitize_for_display(string, 50);
-        debug!("match_string: input='{}' pattern='{}' result={}", 
-               sanitized, pattern, result);
+        if result {
+            debug!("match_string: input='{}' pattern='{}' result={}", 
+                sanitized, pattern, result);
+        }
     }
     
     result
@@ -116,7 +118,7 @@ pub async fn delete_spam(config: &Config) -> Result<(), Box<dyn std::error::Erro
     ).await?;
 
     for message in messages {
-        info!("The message {:?} is spam, trying to delete it", message.subject);
+        info!("The message {:#?} is spam, trying to delete it", message);
         
         let Some(id) = &message.message_id else {
             error!("Cannot move message to another folder: missing message ID");
