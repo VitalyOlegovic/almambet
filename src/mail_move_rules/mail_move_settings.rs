@@ -12,6 +12,7 @@ pub struct Rule {
     pub from: Option<Vec<String>>,
     pub title: Option<Vec<String>>,
     pub body: Option<Vec<String>>,
+    pub user_agent: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]

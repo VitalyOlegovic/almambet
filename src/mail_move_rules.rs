@@ -41,29 +41,41 @@ fn match_many_strings(string: &str, patterns: &[String]) -> bool {
 }
 
 pub fn check_message_matches(message: &Message, rule: &Rule) -> bool {
-    // Check "from" patterns
-    let from_matches = match &rule.from {
-        Some(patterns) => match_many_strings(&message.from, patterns),
-        None => false,
-    };
+    // Early return if rule has no patterns to check (all fields are None)
+    if rule.from.is_none() && rule.title.is_none() && rule.body.is_none() && rule.user_agent.is_none() {
+        return false;
+    }
 
-    // Check "title" patterns if you have them
-    let title_matches = match &rule.title{
-        Some(patterns) => match_many_strings(&message.subject, patterns),
-        None => false,
-    };
+    // Check each pattern type, short-circuiting as soon as we find a match
+    if let Some(patterns) = &rule.from {
+        if match_many_strings(&message.from, patterns) {
+            return true;
+        }
+    }
 
-    // Check "body" patterns if you have them
-    let body_matches = match &rule.body{
-        Some(patterns) => match_many_strings(
-            message.content.clone().unwrap().as_ref(), 
-            patterns
-        ),
-        None => false,
-    };
+    if let Some(patterns) = &rule.title {
+        if match_many_strings(&message.subject, patterns) {
+            return true;
+        }
+    }
 
-    // Return true if any pattern matches
-    from_matches || title_matches || body_matches
+    if let Some(patterns) = &rule.body {
+        if let Some(content) = &message.content {
+            if match_many_strings(content, patterns) {
+                return true;
+            }
+        }
+    }
+
+    if let Some(patterns) = &rule.user_agent {
+        if let Some(user_agent) = &message.user_agent {
+            if match_many_strings(user_agent, patterns) {
+                return true;
+            }
+        }
+    }
+
+    false
 }
 
 pub async fn apply_rules(config: &Config) -> Result<(), Box<dyn std::error::Error>> {

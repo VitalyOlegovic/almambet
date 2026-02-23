@@ -23,6 +23,9 @@ rules:
         - "verify your identity immediately"
         - "special discount just for you"
 
+      user_agent: 
+        - "DomeEngine"
+
   - rule:
       target_folder: "PROMOTIONS"
       from:
