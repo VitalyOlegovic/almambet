@@ -2,14 +2,15 @@ use anyhow::{Result,Error};
 use async_imap::{Client, Session};
 use futures::TryStreamExt;
 use tokio::net::TcpStream;
+use tokio::time::sleep;
 use tokio_util::compat::{Compat, TokioAsyncReadCompatExt};
-use std::{cmp::Ordering, error::Error as StdError};
+use std::{cmp::Ordering, error::Error as StdError, time::Duration};
 use chrono::DateTime;
 
 use crate::mail_reader::message::Message;
 use crate::settings::Config;
 use crate::mail_reader::encryption;
-use log::{debug, info, error};
+use log::{debug, info, error, warn};
 use futures::StreamExt;  // For the stream's next() method
 
 use super::message::fetch_to_message;
@@ -62,11 +63,56 @@ pub fn sort_messages_by_date_desc(messages: &mut Vec<Message>) {
     });
 }
 
-// Fetch and process messages from the given mailbox
+// Fetch and process messages from the given mailbox with retry logic
 pub async fn fetch_messages(
     session: &mut Session<Compat<tokio_native_tls::TlsStream<TcpStream>>>,
     mailbox: &str,
-    count: u32
+    count: u32,
+) -> Result<Vec<Message>> {
+    const MAX_RETRIES: u32 = 3;
+    const INITIAL_BACKOFF_MS: u64 = 500;
+
+    let mut attempt = 0;
+    let mut last_error = None;
+
+    while attempt < MAX_RETRIES {
+        attempt += 1;
+        
+        match fetch_messages_internal(session, mailbox, count).await {
+            Ok(messages) => {
+                if attempt > 1 {
+                    info!("Successfully fetched messages on attempt {}", attempt);
+                }
+                return Ok(messages);
+            }
+            Err(e) => {
+                let is_retryable = is_retryable_error(&e);
+                
+                if !is_retryable || attempt >= MAX_RETRIES {
+                    return Err(e);
+                }
+                
+                let backoff = Duration::from_millis(INITIAL_BACKOFF_MS * 2u64.pow(attempt - 1));
+                warn!(
+                    "Failed to fetch messages (attempt {}/{}): {}. Retrying in {:?}...",
+                    attempt, MAX_RETRIES, e, backoff
+                );
+                
+                last_error = Some(e);
+                sleep(backoff).await;
+            }
+        }
+    }
+
+    // This should never be reached due to the return in the loop, but satisfy the compiler
+    Err(last_error.unwrap())
+}
+
+// Internal implementation of message fetching
+async fn fetch_messages_internal(
+    session: &mut Session<Compat<tokio_native_tls::TlsStream<TcpStream>>>,
+    mailbox: &str,
+    count: u32,
 ) -> Result<Vec<Message>> {
     let mailbox_data = session.select(mailbox).await?;
     info!("{} selected", mailbox);
@@ -87,6 +133,22 @@ pub async fn fetch_messages(
     sort_messages_by_date_desc(&mut successful_results);
     
     Ok(successful_results)
+}
+
+// Determine if an error is retryable
+fn is_retryable_error(error: &anyhow::Error) -> bool {
+    let error_string = error.to_string().to_lowercase();
+    
+    // Check for network-related errors that might be transient
+    error_string.contains("name or service not known") ||
+    error_string.contains("connection") ||
+    error_string.contains("timeout") ||
+    error_string.contains("network") ||
+    error_string.contains("dns") ||
+    error_string.contains("temporary failure") ||
+    error_string.contains("broken pipe") ||
+    error_string.contains("connection reset") ||
+    error_string.contains("io error")
 }
 
 pub async fn find_message_by_id(
