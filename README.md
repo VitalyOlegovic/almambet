@@ -35,6 +35,11 @@ The application will generate the following encrypted files and use them as a ca
       cargo run -- --once
       ```
 
+    * Print the most recent e-mails and exit:
+      ```bash
+      cargo run -- --print
+      ```
+
     * Delete spam messages and exit:
       ```bash
       cargo run -- --spam

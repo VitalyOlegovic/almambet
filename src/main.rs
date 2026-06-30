@@ -63,6 +63,7 @@ enum OperationMode {
     Web,
     Rest,
     Spam,
+    Print,
 }
 
 impl OperationMode {
@@ -84,6 +85,9 @@ impl OperationMode {
         if matches.get_flag("spam") {
             modes.push(OperationMode::Spam);
         }
+        if matches.get_flag("print") {
+            modes.push(OperationMode::Print);
+        }
 
         modes
     }
@@ -102,8 +106,15 @@ fn build_cli() -> Command {
                 .help("Apply movement rules once and exit"),
         )
         .arg(
-            Arg::new("periodic")
+            Arg::new("print")
                 .short('p')
+                .long("print")
+                .action(ArgAction::SetTrue)
+                .help("Print the most recent e-mails and exit"),
+        )
+        .arg(
+            Arg::new("periodic")
+                .short('t')
                 .long("periodic")
                 .action(ArgAction::SetTrue)
                 .help("Apply movement rules periodically"),
@@ -160,6 +171,10 @@ async fn execute_mode(mode: OperationMode, config: &settings::Config) -> AppResu
             mail_move_rules::delete_spam(config).await?;
             info!("Successfully executed spam deletion");
         }
+        OperationMode::Print => {
+            mail_move_rules::print_emails(config).await?;
+            info!("Successfully printed e-mail messages")
+        }
     }
     
     Ok(())
@@ -175,7 +190,8 @@ fn validate_modes(modes: &[OperationMode]) -> AppResult<()> {
     let has_server_mode = modes.contains(&OperationMode::Web) || modes.contains(&OperationMode::Rest);
     let has_processing_mode = modes.contains(&OperationMode::Once) || 
                              modes.contains(&OperationMode::Periodic) || 
-                             modes.contains(&OperationMode::Spam);
+                             modes.contains(&OperationMode::Spam) ||
+                             modes.contains(&OperationMode::Print);
 
     // If both server and processing modes are selected, warn the user
     if has_server_mode && has_processing_mode {

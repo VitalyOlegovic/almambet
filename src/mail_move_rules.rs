@@ -42,7 +42,7 @@ fn match_many_strings(string: &str, patterns: &[String]) -> bool {
 
 pub fn check_message_matches(message: &Message, rule: &Rule) -> bool {
     // Early return if rule has no patterns to check (all fields are None)
-    if rule.from.is_none() && rule.title.is_none() && rule.body.is_none() && rule.user_agent.is_none() {
+    if rule.from.is_none() && rule.title.is_none() && rule.body.is_none() && rule.user_agent.is_none() && rule.to.is_none() {
         return false;
     }
 
@@ -56,6 +56,14 @@ pub fn check_message_matches(message: &Message, rule: &Rule) -> bool {
     if let Some(patterns) = &rule.title {
         if match_many_strings(&message.subject, patterns) {
             return true;
+        }
+    }
+
+    if let Some(patterns) = &rule.to {
+        if let Some(to_string) = &message.to {
+            if match_many_strings(to_string, patterns) {
+                return true;
+            }
         }
     }
 
@@ -145,6 +153,25 @@ pub async fn delete_spam(config: &Config) -> Result<(), Box<dyn std::error::Erro
         ).await {
             error!("Failed to move message: {}", e);
         }
+    }
+
+    imap_session.logout().await?;
+    Ok(())
+}
+
+pub async fn print_emails(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
+    info!("Printing e-mails");
+    let rules_config = load_mail_move_config()?;
+    let mut imap_session = create_session(config).await?;
+    
+    let messages = fetch_messages(
+        &mut imap_session, 
+        "INBOX", 
+        rules_config.messages_to_check
+    ).await?;
+
+    for message in messages {
+        println!("* {} from {}", message.subject.trim(), message.from);
     }
 
     imap_session.logout().await?;
